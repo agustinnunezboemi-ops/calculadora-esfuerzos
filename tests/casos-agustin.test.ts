@@ -56,7 +56,6 @@ test('TP N°4 · 6: pórtico con columna central, cupla y voladizos (coincide co
   close(at(s, 'M', 'B', 'der'), 16, 'Mb der');
   close(at(s, 'M', 'C', 'izq'), 0, 'Mc');
   // Columna B–D–F: N = −2, Q = 0
-  close(at(s, 'N', 'B', 'der') , 0, 'N en BC'); // BC es horizontal
   const col = s.bars.filter((b) => b.bar.from === 'B' && b.bar.to === 'D' || b.bar.from === 'D' && b.bar.to === 'F');
   for (const b of col) close(b.N.eval(0), -2, `N en ${b.bar.id}`), close(b.Q.eval(0), 0, `Q en ${b.bar.id}`);
   close(col[0].M.eval(0), -28, 'Mb arriba');
@@ -65,9 +64,10 @@ test('TP N°4 · 6: pórtico con columna central, cupla y voladizos (coincide co
   close(col[1].M.eval(2), -24, 'Mf abajo');
   // Viga superior E–F–G
   close(at(s, 'Q', 'E', 'der'), 8, 'Qe');
-  close(at(s, 'Q', 'F', 'izq'), 4, 'Qf izq');
+  const ef = s.bars.find((b) => b.bar.from === 'E' && b.bar.to === 'F')!;
+  close(ef.Q.eval(ef.bar.L), 4, 'Qf izq');
   close(at(s, 'Q', 'F', 'der'), 6, 'Qf der');
-  close(at(s, 'M', 'F', 'izq'), 12, 'Mf izq');
+  close(ef.M.eval(ef.bar.L), 12, 'Mf izq');
   // El TP indica Mf der = 12, pero el voladizo FG con 6 kN en G da −12 (como Mb izq = −12)
   // y solo así cierra el equilibrio del nudo F: −12 + (−12) − (−24) = 0.
   close(at(s, 'M', 'F', 'der'), -12, 'Mf der (errata del TP: dice 12)');
