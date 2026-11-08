@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "unidades": "kN-m",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 2,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 4,
+      "y": 0
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "BC",
+      "from": "B",
+      "to": "C"
+    }
+  ],
+  "supports": [
+    {
+      "node": "C",
+      "type": "empotramiento"
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "A",
+      "value": 10,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "B",
+      "value": 10,
+      "angle": -90
+    }
+  ]
+}
