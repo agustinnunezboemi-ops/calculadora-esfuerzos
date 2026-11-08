@@ -83,6 +83,10 @@ export interface Solution {
   nodeChecks: NodeCheck[];
   /** Máximo residuo de equilibrio global (control). */
   residual: number;
+  /** Chapa de cada tramo (mismo orden que structure.bars). */
+  chapaOf: number[];
+  /** Nodos que son articulaciones efectivas entre chapas. */
+  pins: string[];
 }
 
 // ---------- chapas ----------
@@ -147,7 +151,7 @@ export function analyze(model: Model): Solution {
       unknowns.push({ name: `R_{${s.node}x}`, kind: 'fuerza', dir: vec(1, 0), node: s.node, body, source: 'vinculo', supportType: s.type });
       unknowns.push({ name: `R_{${s.node}y}`, kind: 'fuerza', dir: vec(0, 1), node: s.node, body, source: 'vinculo', supportType: s.type });
       if (s.type === 'empotramiento')
-        unknowns.push({ name: `M_{${s.node}}`, kind: 'momento', dir: vec(0, 0), node: s.node, body, source: 'vinculo', supportType: s.type });
+        unknowns.push({ name: `Me_{${s.node}}`, kind: 'momento', dir: vec(0, 0), node: s.node, body, source: 'vinculo', supportType: s.type });
     } else {
       const d = reactionDir(s);
       unknowns.push({ name: `R_{${s.node}${axisName(d)}}`, kind: 'fuerza', dir: d, node: s.node, body, source: 'vinculo', supportType: s.type });
@@ -240,7 +244,7 @@ export function analyze(model: Model): Solution {
   const classification: Classification = { chapas: nChapas, gradosLibertad: gl, restricciones, detalleRestricciones: detalle, status, motivo };
 
   if (status !== 'isostatico') {
-    return { structure: st, classification, unknowns, values: [], bars: [], extremes: emptyExtremes(), nodeChecks: [], residual: NaN };
+    return { structure: st, classification, unknowns, values: [], bars: [], extremes: emptyExtremes(), nodeChecks: [], residual: NaN, chapaOf: chapa, pins: pins.map((p) => p.id) };
   }
 
   const values = solve(A, f.map((v) => -v));
@@ -401,7 +405,7 @@ export function analyze(model: Model): Solution {
     return { node: n.id, Fx: clean(F.x), Fy: clean(F.y), M: clean(M), ok: norm(F) < 1e-7 * sc && Math.abs(M) < 1e-7 * sc };
   });
 
-  return { structure: st, classification, unknowns, values: values.map(clean), bars, extremes: ext, nodeChecks, residual };
+  return { structure: st, classification, unknowns, values: values.map(clean), bars, extremes: ext, nodeChecks, residual, chapaOf: chapa, pins: pins.map((p) => p.id) };
 }
 
 /** Resultante R de una carga distribuida sobre [0, L] de la barra y su momento respecto de P0. */

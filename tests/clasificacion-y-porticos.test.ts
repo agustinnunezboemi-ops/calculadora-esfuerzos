@@ -38,7 +38,7 @@ test('columna empotrada: SRP con x\' hacia arriba e y\' hacia la izquierda', () 
   close(b.Q.eval(0), P, 'Q = +P');
   close(b.M.eval(0), -P * H, 'Mf en la base = −P·H');
   close(b.M.eval(H), 0, 'Mf en el extremo libre');
-  close(reaction(s, 'M_{A}'), P * H, 'momento de empotramiento');
+  close(reaction(s, 'Me_{A}'), P * H, 'momento de empotramiento');
 });
 
 test('pórtico en L: equilibrio del nudo rígido', () => {
