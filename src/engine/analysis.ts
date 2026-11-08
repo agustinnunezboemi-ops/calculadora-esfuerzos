@@ -114,12 +114,15 @@ function axisName(d: Vec): 'x' | 'y' | '' {
 
 /** Dirección de la reacción de un apoyo móvil o biela. */
 export function reactionDir(s: SupportDef): Vec {
+  let d: Vec;
   if (s.type === 'movil') {
     const a = ((s.angle ?? 0) * Math.PI) / 180;
-    const d = vec(-Math.sin(a), Math.cos(a));
-    return vec(Math.abs(d.x) < 1e-15 ? 0 : d.x, Math.abs(d.y) < 1e-15 ? 0 : d.y);
-  }
-  return dirDeg(s.angle ?? 90);
+    d = vec(-Math.sin(a), Math.cos(a));
+  } else d = dirDeg(s.angle ?? 90);
+  d = vec(Math.abs(d.x) < 1e-12 ? 0 : d.x, Math.abs(d.y) < 1e-12 ? 0 : d.y);
+  // Sentido supuesto positivo según el SRG (módulo 10): hacia +x, o hacia +y si es vertical.
+  if (d.x < 0 || (d.x === 0 && d.y < 0)) d = vec(-d.x, -d.y);
+  return vec(d.x || 0, d.y || 0);
 }
 
 // ---------- análisis ----------

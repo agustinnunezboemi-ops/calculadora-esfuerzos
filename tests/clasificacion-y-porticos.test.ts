@@ -94,3 +94,15 @@ test('barra inclinada con carga vertical por unidad de longitud real', () => {
   close(reaction(s, 'R_{Ay}') + reaction(s, 'R_{By}'), 8, 'ΣR = q·L real');
   close(s.extremes.max.M.valor, (2 * c * Lr * Lr) / 8, 'Mmax = q·cos(α)·L²/8');
 });
+
+test('apoyo móvil sobre plano vertical: la reacción se supone hacia +x (SRG)', () => {
+  const s = solved({
+    nodes: [{ id: 'A', x: 0, y: 0 }, { id: 'B', x: 0, y: 3 }],
+    bars: [{ id: 'col', from: 'A', to: 'B' }],
+    supports: [{ node: 'A', type: 'fijo' }, { node: 'B', type: 'movil', angle: 90 }],
+    loads: [{ type: 'puntual', node: 'B', value: 5, angle: 180 }],
+  });
+  const u = s.unknowns.find((x) => x.name === 'R_{Bx}')!;
+  assert.deepEqual([u.dir.x, u.dir.y], [1, 0]);
+  close(reaction(s, 'R_{Bx}'), 5, 'R_Bx = +5 (hacia la derecha)');
+});

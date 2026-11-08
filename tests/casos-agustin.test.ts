@@ -13,7 +13,7 @@ test('TP N°4 · 5b: pórtico en T (P = 1 kN, L = 1 m), coincide con las respues
   const s = solved(caso('tp4-5b.json'));
   close(reaction(s, 'R_{By}'), 4, 'R_By');
   close(reaction(s, 'R_{Dy}'), -3, 'R_Dy');
-  close(reaction(s, 'R_{Ex}'), -1, 'R_Ex');
+  close(reaction(s, 'R_{Ex}'), 1, 'R_Ex (hacia la derecha, supuesta positiva según el SRG)');
   // Viga A–B–C–D
   close(at(s, 'Q', 'A', 'der'), -1, 'Q en A');
   close(at(s, 'M', 'B', 'izq'), -0.25, 'Mf en B');
