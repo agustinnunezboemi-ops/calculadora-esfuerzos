@@ -127,7 +127,9 @@ export function App() {
     f.text().then((t) => {
       try {
         const j = JSON.parse(t);
+        if (!Array.isArray(j.nodes) || !Array.isArray(j.bars)) throw new Error('sin nodos o barras');
         setModel({ nodes: j.nodes, bars: j.bars, supports: j.supports ?? [], hinges: j.hinges ?? [], loads: j.loads ?? [] });
+        setHighlight(null);
         if (j.unidades) setUnidadesId(j.unidades);
       } catch {
         alert('El archivo no es un .json de estructura válido.');
@@ -178,7 +180,12 @@ export function App() {
           <button onClick={() => setModel({ nodes: [{ id: 'A', x: 0, y: 0 }, { id: 'B', x: 4, y: 0 }], bars: [{ id: 'AB', from: 'A', to: 'B' }], supports: [], hinges: [], loads: [] })}>Nuevo</button>
           <button onClick={() => fileRef.current?.click()}>Abrir .json</button>
           <button onClick={exportJson}>Guardar .json</button>
-          <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />
+          <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) importJson(f);
+            // Permite volver a abrir el mismo archivo: sin esto el navegador no avisa el cambio.
+            e.target.value = '';
+          }} />
         </div>
       </header>
 
