@@ -20,6 +20,8 @@ teóricos ITBA (Prof. Mg. Ing. Neoren Germán Franco), en particular:
 | Normalización | `src/engine/normalize.ts` | Detecta nodos, divide tramos, orienta cada barra (SRP) |
 | Análisis | `src/engine/analysis.ts` | Clasificación, RVE, N-Q-Mf por izquierda y por derecha, máximos, equilibrio de nudos |
 | Polinomios | `src/engine/poly.ts` | Expresiones por tramo en la variable local xᵢ |
+| Paso a paso | `src/engine/steps.ts` | Desarrollo con la redacción del apunte (pasos 1 a 12) |
+| Interfaz | `src/ui/` | Editor por tablas, ejemplos, dibujo de la estructura, diagramas N-Q-Mf rayados, paso a paso |
 
 ## Convención de signos (módulo 10)
 
@@ -32,6 +34,12 @@ teóricos ITBA (Prof. Mg. Ing. Neoren Germán Franco), en particular:
 En barras no horizontales se usa un **sistema de referencia particular (SRP)**: x′ a lo largo
 de la barra en el sentido de recorrido, y′ girado 90° antihorario. Las verticales se recorren
 de abajo hacia arriba y las inclinadas desde su extremo izquierdo.
+
+## Uso
+
+`npm run build` genera `dist/index.html`, un único archivo que funciona abierto
+directamente en el navegador (sin servidor). Al subir a `main`, GitHub Actions
+corre las pruebas y lo publica en GitHub Pages.
 
 ## Pruebas
 
