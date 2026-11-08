@@ -4,6 +4,7 @@ import { analyze, Solution } from '../engine/analysis.ts';
 import { normalize, Structure } from '../engine/normalize.ts';
 import { buildSteps, Step, Block, fmt } from '../engine/steps.ts';
 import { Drawing } from './Drawing.tsx';
+import { NudoDiagram } from './Nudo.tsx';
 import { EXAMPLES, UNIT_SYSTEMS } from './examples.ts';
 
 const STORAGE = 'calculadora-esfuerzos:v1';
@@ -138,7 +139,6 @@ export function App() {
   const status = sol?.classification.status;
   const resuelto = sol && status === 'isostatico';
   const isFrame = model.nodes.some((n) => n.y !== model.nodes[0].y);
-  const hDiag = isFrame ? 330 : 200;
 
   return (
     <div className="app">
@@ -293,13 +293,13 @@ export function App() {
                 <figcaption>Estructura {resuelto && dce ? 'y reacciones (DCE)' : '(DCL)'}</figcaption>
                 {resuelto && <label className="interruptor"><input type="checkbox" checked={dce} onChange={(e) => setDce(e.target.checked)} /> Mostrar reacciones</label>}
               </div>
-              <Drawing st={st} sol={sol} mode="estructura" showReactions={dce} highlight={highlight} onPick={setHighlight} height={isFrame ? 360 : 230} unidades={units} />
+              <Drawing st={st} sol={sol} mode="estructura" showReactions={dce} highlight={highlight} onPick={setHighlight} unidades={units} />
             </figure>
           )}
           {resuelto && st && (['N', 'Q', 'M'] as const).map((k) => (
             <figure key={k}>
               <figcaption>{k === 'N' ? 'Esfuerzo normal N' : k === 'Q' ? 'Esfuerzo de corte Q' : 'Momento flector Mf'}</figcaption>
-              <Drawing st={st} sol={sol} mode={k} highlight={highlight} onPick={(b) => { setHighlight(b); }} height={hDiag} unidades={units} />
+              <Drawing st={st} sol={sol} mode={k} highlight={highlight} onPick={(b) => { setHighlight(b); }} unidades={units} />
             </figure>
           ))}
           {resuelto && (
@@ -340,6 +340,7 @@ function BlockView({ b }: { b: Block }) {
     case 'eq': return <p className="ecuacion"><Math_ text={b.text} /></p>;
     case 'ok': return <p className="control ok"><span aria-hidden>✓</span> <Math_ text={b.text} /></p>;
     case 'warn': return <p className="control mal"><span aria-hidden>!</span> <Math_ text={b.text} /></p>;
+    case 'nudo': return <NudoDiagram node={b.node} elems={b.elems} />;
     case 'list': return <ul>{b.items.map((t, i) => <li key={i}><Math_ text={t} /></li>)}</ul>;
     case 'table':
       return (

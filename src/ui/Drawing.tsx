@@ -14,20 +14,27 @@ interface Props {
   highlight?: string | null;
   onPick?: (barId: string) => void;
   showReactions?: boolean;
-  height?: number;
+  maxHeight?: number;
   unidades: { fuerza: string; longitud: string };
 }
 
 const W = 760;
 
-export function Drawing({ st, sol, mode, highlight, onPick, showReactions, height = 300, unidades }: Props) {
+export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHeight = 620, unidades }: Props) {
   const xs = st.nodes.map((n) => n.p.x);
   const ys = st.nodes.map((n) => n.p.y);
   const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
   const spanX = Math.max(maxX - minX, 1e-6), spanY = Math.max(maxY - minY, 1e-6);
-  const hDiag = Math.min(70, height * 0.28);
-  const pad = mode === 'estructura' ? 70 : hDiag + 36;
-  const k = Math.min((W - 2 * pad) / spanX, spanY > 1e-6 ? (height - 2 * pad) / spanY : Infinity);
+  // Misma escala y posición en la estructura y en los tres diagramas: el margen
+  // reserva lugar para el diagrama, y la altura se adapta a la proporción de la estructura.
+  const hDiag = 80;
+  const anyNotHoriz = st.bars.some((b) => Math.abs(b.e.y) > 1e-9);
+  const anyNotVert = st.bars.some((b) => Math.abs(b.e.x) > 1e-9);
+  const padX = anyNotHoriz ? hDiag + 44 : 64;
+  const padY = anyNotVert ? hDiag + 36 : 64;
+  const kx = (W - 2 * padX) / spanX;
+  const height = Math.max(200, Math.min(maxHeight, (spanY > 1e-6 ? spanY * kx : 0) + 2 * padY));
+  const k = Math.min(kx, spanY > 1e-6 ? (height - 2 * padY) / spanY : Infinity);
   const ox = W / 2 - ((minX + maxX) / 2) * k;
   const oy = height / 2 + ((minY + maxY) / 2) * k;
   const T = (p: Vec) => vec(ox + p.x * k, oy - p.y * k);

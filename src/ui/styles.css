@@ -163,3 +163,27 @@ sub, sup { font-size: 0.72em; }
   .titulo h1 { font-size: 28px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+/* DCL de nudos */
+.nudo-dcl { width: 100%; max-width: 340px; display: block; margin: 6px auto; background: var(--papel); border: 1px solid var(--borde); border-radius: 4px; }
+.nudo-dcl text { font: 500 12px 'Barlow Condensed', Barlow, sans-serif; fill: var(--tinta); }
+.nudo-dcl .nudo-nombre { font-weight: 600; font-size: 14px; }
+.nudo-dcl .nudo-barra { stroke: var(--tinta); stroke-width: 6; stroke-linecap: round; opacity: 0.25; }
+.nudo-dcl .nudo-centro { fill: var(--papel-2); stroke: var(--tinta); stroke-width: 2; }
+.nudo-dcl .axil line { stroke: var(--pos); stroke-width: 1.8; }
+.nudo-dcl .axil text { fill: var(--pos); }
+.nudo-dcl .punta-axil { fill: var(--pos); }
+.nudo-dcl .corte line { stroke: #9a7a1e; stroke-width: 1.8; }
+.nudo-dcl .corte text { fill: #9a7a1e; }
+.nudo-dcl .punta-corte { fill: #9a7a1e; }
+.nudo-dcl .momento path { stroke: var(--tinta); stroke-width: 1.6; }
+.nudo-dcl .punta-momento { fill: var(--tinta); }
+.nudo-dcl .carga line { stroke: var(--neg); stroke-width: 1.8; }
+.nudo-dcl .carga text, .nudo-dcl text.carga { fill: var(--neg); }
+.nudo-dcl .punta-carga { fill: var(--neg); }
+.nudo-dcl .reac line { stroke: var(--reaccion); stroke-width: 1.8; }
+.nudo-dcl .reac text { fill: var(--reaccion); }
+.nudo-dcl .punta-reac { fill: var(--reaccion); }
+@media (prefers-color-scheme: dark) {
+  .nudo-dcl .corte line { stroke: #d9b65a; } .nudo-dcl .corte text { fill: #d9b65a; } .nudo-dcl .punta-corte { fill: #d9b65a; }
+}

@@ -19,7 +19,23 @@ export type Block =
   | { t: 'list'; items: string[] }
   | { t: 'table'; head: string[]; rows: string[][] }
   | { t: 'ok'; text: string }
-  | { t: 'warn'; text: string };
+  | { t: 'warn'; text: string }
+  | { t: 'nudo'; node: string; elems: NudoElem[] };
+
+/** Acción sobre un nudo (para dibujar su DCL). Vectores en el SRG. */
+export interface NudoElem {
+  label: string;
+  /** Dirección unitaria desde el nudo hacia la barra (solo extremos de barra). */
+  dir?: Vec;
+  /** Para extremos de barra: componente axil y de corte por separado. */
+  axial?: Vec;
+  shear?: Vec;
+  F: Vec;
+  M: number;
+  tipo: 'barra' | 'carga' | 'reaccion';
+  /** Esfuerzos del extremo de barra (convención del módulo 10). */
+  esf?: { N: number; Q: number; M: number };
+}
 
 export interface Step {
   id: string;
@@ -295,10 +311,14 @@ export function buildSteps(sol: Solution, u: Units): Step[] {
   });
   for (const r of sol.bars) steps.push(sectionStep(sol, r, names, u));
 
-  // 11. Tabla de valores.
+  // 11. Equilibrio de nudos de pórtico (T, cruz, esquinas).
+  const nudos = nodeSteps(sol, names, u);
+  if (nudos) steps.push(nudos);
+
+  // 12. Tabla de valores.
   steps.push({
     id: 'valores',
-    titulo: '11 – Tabla de valores',
+    titulo: `${nudos ? 12 : 11} – Tabla de valores`,
     blocks: [
       {
         t: 'table',
@@ -317,7 +337,7 @@ export function buildSteps(sol: Solution, u: Units): Step[] {
   const where = (e: typeof ex.max.M) => `tramo ${e.bar}, x = ${fmt(e.x)} ${L}`;
   steps.push({
     id: 'controles',
-    titulo: '12 – Máximos, mínimos y controles',
+    titulo: `${nudos ? 13 : 12} – Máximos, mínimos y controles`,
     blocks: [
       {
         t: 'table',
@@ -335,29 +355,41 @@ export function buildSteps(sol: Solution, u: Units): Step[] {
   return steps;
 }
 
+/** ¿Conviene sacar un signo negativo afuera? Se busca que el término independiente quede positivo: (0,5 − x). */
+function signOut(p: Poly): boolean {
+  const nzc = p.c.filter((v) => Math.abs(v) > 1e-12);
+  if (!nzc.length) return false;
+  if (Math.abs(p.c[0]) > 1e-12) return p.c[0] < 0;
+  return nzc.every((v) => v < 0);
+}
+
 /** Término polinómico con el signo afuera: "− 3·x_{1}", "+ (2 + x_{1})". */
 function polyTerm(p: Poly, x: string): string {
   const nzc = p.c.filter((v) => Math.abs(v) > 1e-12);
-  const neg = nzc.length > 0 && nzc.every((v) => v < 0);
+  const neg = signOut(p);
   const txt = fmtPoly(neg ? p.scale(-1) : p, x);
   return `${neg ? '−' : '+'} ${nzc.length === 1 ? txt : `(${txt})`}`;
 }
 
-function sectionStep(sol: Solution, r: BarResult, names: ReturnType<typeof loadNames>, u: Units): Step {
+type Key = 'N' | 'Q' | 'M';
+interface Terms {
+  s: string[];
+  n: string[];
+  used: Item[];
+}
+
+/** Términos de N, Q y Mf de las fuerzas de un lado de la sección (forma simbólica y numérica). */
+function sideTerms(sol: Solution, r: BarResult, names: ReturnType<typeof loadNames>, side: 'izq' | 'der', x: string): Record<Key, Terms> {
   const st = sol.structure;
   const b = r.bar;
-  const i = r.seccion;
-  const x = `x_{${i}}`;
   const c = sol.chapaOf[st.bars.indexOf(b)];
   const X = Poly.linear(0, 1);
-  const leftBars = st.bars.filter((bb, k) => sol.chapaOf[k] === c && bb !== b && r.nodosIzq.includes(bb.from) && r.nodosIzq.includes(bb.to));
-  const items: Item[] = r.nodosIzq.flatMap((n) => itemsAt(sol, c, n, names));
-  leftBars.forEach((bb) => bb.dist.forEach((d, k) => items.push(distItem(bb, d, k))));
-
-  // Cada término se arma dos veces: con nombres (módulos del DCE) y con números.
+  const nodes = side === 'izq' ? r.nodosIzq : r.nodosDer;
+  const partBars = st.bars.filter((bb, k) => sol.chapaOf[k] === c && bb !== b && nodes.includes(bb.from) && nodes.includes(bb.to));
+  const items: Item[] = nodes.flatMap((n) => itemsAt(sol, c, n, names));
+  partBars.forEach((bb) => bb.dist.forEach((d, k) => items.push(distItem(bb, d, k))));
+  const T: Record<Key, Terms> = { N: { s: [], n: [], used: [] }, Q: { s: [], n: [], used: [] }, M: { s: [], n: [], used: [] } };
   const nz = (p: Poly) => p.c.some((v) => Math.abs(v) > 1e-12);
-  const T = { N: { s: [] as string[], n: [] as string[] }, Q: { s: [] as string[], n: [] as string[] }, M: { s: [] as string[], n: [] as string[] } };
-  /** "± k·Nombre" a partir de la proyección y el módulo. */
   const symProj = (proj: number, mag: number, name: string) => {
     const k = Math.abs(proj) / mag;
     return `${proj < 0 ? '−' : '+'} ${Math.abs(k - 1) < 1e-9 ? '' : `${fmt(k)}·`}${name}`;
@@ -366,73 +398,111 @@ function sectionStep(sol: Solution, r: BarResult, names: ReturnType<typeof loadN
     const mag = Math.hypot(it.F.x, it.F.y);
     const fe = dot(it.F, b.e);
     const fn = dot(it.F, b.n);
-    if (Math.abs(fe) > 1e-12) T.N.s.push(symProj(fe, mag, it.name)), T.N.n.push(signed(fe));
-    if (Math.abs(fn) > 1e-12) T.Q.s.push(symProj(fn, mag, it.name)), T.Q.n.push(signed(fn));
+    if (Math.abs(fe) > 1e-12) T.N.s.push(symProj(fe, mag, it.name)), T.N.n.push(signed(fe)), T.N.used.push(it);
+    if (Math.abs(fn) > 1e-12) T.Q.s.push(symProj(fn, mag, it.name)), T.Q.n.push(signed(fn)), T.Q.used.push(it);
     if (it.M) {
       T.M.s.push(`${it.M < 0 ? '−' : '+'} ${it.name}`);
       T.M.n.push(signed(it.M));
+      T.M.used.push(it);
       continue;
     }
+    // Momento respecto de G(x) = P0 + x·e (antihorario positivo): (P − P0) × F − x·(e × F)
     const mG = Poly.const(cross(sub(it.P, b.P0), it.F)).sub(X.scale(cross(b.e, it.F)));
     if (!nz(mG) || !mag) continue;
-    // Brazo de palanca: mG / |F|, con el signo afuera.
     let arm = mG.scale(1 / mag);
-    const neg = arm.c.filter((v) => Math.abs(v) > 1e-12).every((v) => v < 0);
+    const neg = signOut(arm);
     if (neg) arm = arm.scale(-1);
     const armTxt = fmtPoly(arm, x);
     const single = arm.c.filter((v) => Math.abs(v) > 1e-12).length === 1;
     T.M.s.push(`${neg ? '−' : '+'} ${it.name}·${single ? armTxt : `(${armTxt})`}`);
     T.M.n.push(mG.degree === 0 ? signed(mG.c[0]) : `${neg ? '−' : '+'} ${fmt(mag)}·${single ? armTxt : `(${armTxt})`}`);
+    T.M.used.push(it);
   }
-  // Carga distribuida sobre el propio tramo, entre 0 y x_i.
-  b.dist.forEach((d) => {
+  // Carga distribuida del propio tramo: entre 0 y x (izquierda) o entre x y L (derecha).
+  for (const d of b.dist) {
     const w = Poly.linear(d.q1, (d.q2 - d.q1) / b.L);
-    const W = w.integrate();
-    const Tm = X.mul(w).integrate();
+    const W0 = w.integrate();
+    const T0 = X.mul(w).integrate();
+    const W = side === 'izq' ? W0 : Poly.const(W0.eval(b.L)).sub(W0);
+    const Tm = side === 'izq' ? T0 : Poly.const(T0.eval(b.L)).sub(T0);
     const pe = W.scale(dot(d.d, b.e));
     const pn = W.scale(dot(d.d, b.n));
     const pm = Tm.sub(X.mul(W)).scale(cross(b.e, d.d));
     const uniforme = Math.abs(d.q1 - d.q2) < 1e-12;
     const q = `q_{${b.from}${b.to}}`;
-    // Para carga uniforme: resultante q·x_i aplicada a x_i/2 de la sección.
-    const symF = (k: number) => (uniforme ? `${k < 0 ? '−' : '+'} ${q}·${x}` : `${k < 0 ? '−' : '+'} (${fmtPoly(k < 0 ? W.scale(-1) : W, x)})`);
+    const len = side === 'izq' ? x : `(${fmt(b.L)} − ${x})`;
     const proj = (dd: number, p: Poly) => {
       if (!nz(p)) return null;
-      return { s: uniforme ? `${dd < 0 ? '−' : '+'} ${Math.abs(Math.abs(dd) - 1) < 1e-9 ? '' : `${fmt(Math.abs(dd))}·`}${q}·${x}` : symF(dd), n: polyTerm(p, x) };
+      const k = Math.abs(dd);
+      return {
+        s: uniforme ? `${dd < 0 ? '−' : '+'} ${Math.abs(k - 1) < 1e-9 ? '' : `${fmt(k)}·`}${q}·${len}` : polyTerm(p, x),
+        n: polyTerm(p, x),
+      };
     };
     const a = proj(dot(d.d, b.e), pe);
     if (a) T.N.s.push(a.s), T.N.n.push(a.n);
     const c2 = proj(dot(d.d, b.n), pn);
     if (c2) T.Q.s.push(c2.s), T.Q.n.push(c2.n);
     if (nz(pm)) {
-      const sg = cross(b.e, d.d) < 0 ? '+' : '−'; // ∫(t − x)·w dt ≤ 0
-      T.M.s.push(uniforme ? `${sg} ${q}·${x}·${x}/2` : `+ (${fmtPoly(pm, x)})`);
+      // izquierda: ∫(t − x)·w ≤ 0 ; derecha: ∫(t − x)·w ≥ 0 ; el signo final lo da (e × d)
+      const sgPos = side === 'izq' ? cross(b.e, d.d) < 0 : cross(b.e, d.d) > 0;
+      T.M.s.push(uniforme ? `${sgPos ? '+' : '−'} ${q}·${len}·${len}/2` : polyTerm(pm, x));
       T.M.n.push(polyTerm(pm, x));
     }
-  });
-  const br = (t: string[]) => joinTerms(t);
-  const nTerms = T.N.n;
-  const qTerms = T.Q.n;
-  const mTerms = T.M.n;
-  const qVals = b.dist.length && b.dist.every((d) => Math.abs(d.q1 - d.q2) < 1e-12) ? `, con q_{${b.from}${b.to}} = ${fmt(b.dist.reduce((s, d) => s + d.q1, 0))} ${u.fuerza}/${u.longitud}` : '';
-  const valuesLine = items.length
-    ? `Valores (DCE): ${items.map((it) => `${it.name} = ${fmt(it.M ? Math.abs(it.M) : Math.hypot(it.F.x, it.F.y))}`).join('; ')}${qVals}.`
-    : '';
+  }
+  return T;
+}
+
+const ESF = {
+  N: { nombre: 'Esfuerzo Normal (N)', que: 'las proyecciones sobre la normal a la sección', izq: '−', der: '+', sym: 'N' },
+  Q: { nombre: 'Esfuerzo de Corte (Q)', que: 'las proyecciones sobre el plano de la sección', izq: '+', der: '−', sym: 'Q' },
+  M: { nombre: 'Momento Flector (Mf)', que: 'los momentos respecto del centroide G de la sección', izq: '−', der: '+', sym: 'Mf' },
+} as const;
+
+function sectionStep(sol: Solution, r: BarResult, names: ReturnType<typeof loadNames>, u: Units): Step {
+  const b = r.bar;
+  const i = r.seccion;
+  const x = `x_{${i}}`;
+  const L = sideTerms(sol, r, names, 'izq', x);
+  const R = sideTerms(sol, r, names, 'der', x);
   const rng = `0 ≤ ${x} ≤ ${fmt(b.L)} ${u.longitud}`;
   const blocks: Block[] = [
-    { t: 'p', text: `La sección ${i}–${i} corta el tramo ${b.from}${b.to} a una distancia ${x} de ${b.from}, con ${rng}. Lado izquierdo: ${r.nodosIzq.join(', ')} y el trozo de barra hasta la sección.` },
-    { t: 'p', text: 'Esfuerzo Normal (N): suma de las proyecciones sobre la normal a la sección de las fuerzas a la izquierda. Por izquierda se antepone un signo negativo.' },
-    ...(valuesLine ? [{ t: 'p' as const, text: valuesLine }] : []),
-    { t: 'eq', text: `N_{${i}–${i}}^{IZQ} = −[ ${br(T.N.s)} ] = −[ ${br(nTerms)} ] = ${fmtPoly(r.N, x)}` },
-    { t: r.N.approxEquals(r.Nder, 1) ? 'ok' : 'warn', text: `Por derecha: N_{${i}–${i}}^{DER} = ${fmtPoly(r.Nder, x)}, se arriba al mismo valor.` },
-    { t: 'p', text: 'Esfuerzo de Corte (Q): suma de las proyecciones sobre el plano de la sección de las fuerzas a la izquierda. Por derecha se antepone un signo negativo.' },
-    { t: 'eq', text: `Q_{${i}–${i}}^{IZQ} = +[ ${br(T.Q.s)} ] = +[ ${br(qTerms)} ] = ${fmtPoly(r.Q, x)}` },
-    { t: r.Q.approxEquals(r.Qder, 1) ? 'ok' : 'warn', text: `Por derecha: Q_{${i}–${i}}^{DER} = ${fmtPoly(r.Qder, x)}, se arriba al mismo valor.` },
-    { t: 'p', text: 'Momento Flector (Mf): suma de los momentos respecto del centroide G de la sección de las fuerzas a la izquierda. Por izquierda se antepone un signo negativo.' },
-    { t: 'eq', text: `Mf_{${i}–${i}}^{IZQ} = −[ ${br(T.M.s)} ] = −[ ${br(mTerms)} ] = ${fmtPoly(r.M, x)}` },
-    { t: r.M.approxEquals(r.Mder, 1) ? 'ok' : 'warn', text: `Por derecha: Mf_{${i}–${i}}^{DER} = ${fmtPoly(r.Mder, x)}, se arriba al mismo valor.` },
+    {
+      t: 'p',
+      text: `La sección ${i}–${i} corta el tramo ${b.from}${b.to} a una distancia ${x} de ${b.from}, con ${rng}. Lado izquierdo: ${r.nodosIzq.join(', ')}; lado derecho: ${r.nodosDer.join(', ')}. En cada esfuerzo se desarrolla el lado con menos términos y el otro se usa para verificar.`,
+    },
   ];
-  // Interpretación del momento.
+  const res: Record<Key, { izq: Poly; der: Poly }> = { N: { izq: r.N, der: r.Nder }, Q: { izq: r.Q, der: r.Qder }, M: { izq: r.M, der: r.Mder } };
+  const usedItems = new Map<string, Item>();
+  const keyBlocks: Block[] = [];
+  for (const k of ['N', 'Q', 'M'] as Key[]) {
+    const e = ESF[k];
+    const useDer = R[k].s.length < L[k].s.length;
+    const side = useDer ? 'der' : 'izq';
+    const T = useDer ? R[k] : L[k];
+    T.used.forEach((it) => usedItems.set(it.name, it));
+    const pre = e[side];
+    const regla =
+      pre === '−' ? `Por ${useDer ? 'derecha' : 'izquierda'} se antepone un signo negativo.` : `Por ${useDer ? 'derecha' : 'izquierda'} se toma la suma con su signo.`;
+    const porque = useDer ? ` Se calcula por derecha: ${R[k].s.length} término${R[k].s.length === 1 ? '' : 's'} contra ${L[k].s.length} por izquierda.` : '';
+    keyBlocks.push({ t: 'p', text: `${e.nombre}: suma de ${e.que} de las fuerzas a la ${useDer ? 'derecha' : 'izquierda'}. ${regla}${porque}` });
+    const val = res[k][side];
+    keyBlocks.push({
+      t: 'eq',
+      text: `${e.sym}_{${i}–${i}}^{${useDer ? 'DER' : 'IZQ'}} = ${pre}[ ${joinTerms(T.s)} ] = ${pre}[ ${joinTerms(T.n)} ] = ${fmtPoly(val, x)}`,
+    });
+    const other = res[k][useDer ? 'izq' : 'der'];
+    keyBlocks.push({
+      t: other.approxEquals(val, 1) ? 'ok' : 'warn',
+      text: `Por ${useDer ? 'izquierda' : 'derecha'}: ${e.sym}_{${i}–${i}}^{${useDer ? 'IZQ' : 'DER'}} = ${fmtPoly(other, x)}, se arriba al mismo valor.`,
+    });
+  }
+  const items = [...usedItems.values()];
+  const qs = b.dist.filter((d) => Math.abs(d.q1 - d.q2) < 1e-12);
+  const qVals = qs.length ? `${items.length ? '; ' : ''}q_{${b.from}${b.to}} = ${fmt(qs.reduce((s, d) => s + d.q1, 0))} ${u.fuerza}/${u.longitud}` : '';
+  if (items.length || qVals)
+    blocks.push({ t: 'p', text: `Valores (DCE): ${items.map((it) => `${it.name} = ${fmt(it.M ? Math.abs(it.M) : Math.hypot(it.F.x, it.F.y))}`).join('; ')}${qVals}.` });
+  blocks.push(...keyBlocks);
   if (r.M.degree === 2) {
     const [cc, bb, a] = r.M.c;
     const xv = -bb / (2 * a);
@@ -441,10 +511,80 @@ function sectionStep(sol: Solution, r: BarResult, names: ReturnType<typeof loadN
       text: `Mf es una parábola (a = ${fmt(a)}, b = ${fmt(bb)}, c = ${fmt(cc)}) con ramas hacia ${a < 0 ? 'abajo' : 'arriba'}. Vértice: x_{v} = −b/2a = ${fmt(xv)} ${u.longitud}${xv > 0 && xv < b.L ? `, Mf_{v} = ${fmt(r.M.eval(xv))} ${u.fuerza}·${u.longitud} (dentro del tramo)` : ' (fuera del tramo)'}.`,
     });
   } else if (r.M.degree === 1) blocks.push({ t: 'p', text: `Mf varía linealmente (recta de pendiente ${fmt(r.M.c[1])} = Q).` });
-  blocks.push({
-    t: 'table',
-    head: [x, 'N', 'Q', 'Mf'],
-    rows: [0, b.L].map((xv) => [`${fmt(xv)}`, fmt(r.N.eval(xv)), fmt(r.Q.eval(xv)), fmt(r.M.eval(xv))]),
-  });
+  blocks.push({ t: 'table', head: [x, 'N', 'Q', 'Mf'], rows: [0, b.L].map((xv) => [`${fmt(xv)}`, fmt(r.N.eval(xv)), fmt(r.Q.eval(xv)), fmt(r.M.eval(xv))]) });
   return { id: `seccion-${i}`, titulo: `8 a 10 – Sección ${i}–${i}, tramo ${b.from}${b.to} (N, Q, Mf)`, blocks, bar: b.id };
+}
+
+/** Nudos donde se unen 3 o más barras, o 2 barras que forman ángulo (esquina). */
+function frameNodes(sol: Solution): string[] {
+  const st = sol.structure;
+  return st.nodes
+    .map((n) => n.id)
+    .filter((id) => {
+      const bs = st.bars.filter((b) => b.from === id || b.to === id);
+      if (bs.length >= 3) return true;
+      if (bs.length === 2) {
+        const d = bs.map((b) => (b.from === id ? b.e : scale(b.e, -1)));
+        return Math.abs(cross(d[0], d[1])) > 1e-6;
+      }
+      return false;
+    });
+}
+
+function nodeSteps(sol: Solution, names: ReturnType<typeof loadNames>, u: Units): Step | null {
+  const ids = frameNodes(sol);
+  if (!ids.length) return null;
+  const st = sol.structure;
+  const F = u.fuerza;
+  const ML = `${u.fuerza}·${u.longitud}`;
+  const blocks: Block[] = [
+    {
+      t: 'p',
+      text: 'En los nudos de pórtico (uniones en T, en cruz y esquinas) se aísla el nudo y se verifica su equilibrio. Sobre el nudo actúan, en cada extremo de barra, los esfuerzos N, Q y Mf con sentido opuesto al que actúan sobre la barra, más las cargas y reacciones aplicadas en él.',
+    },
+  ];
+  for (const id of ids) {
+    const elems: NudoElem[] = [];
+    for (const r of sol.bars) {
+      const b = r.bar;
+      const nm = `${b.from}${b.to}`;
+      if (b.from === id) {
+        const N = r.N.eval(0), Q = r.Q.eval(0), M = r.M.eval(0);
+        const axial = scale(b.e, N), shear = scale(b.n, -Q);
+        elems.push({ label: `${nm} (inicio)`, dir: b.e, axial, shear, F: add(axial, shear), M, tipo: 'barra', esf: { N, Q, M } });
+      }
+      if (b.to === id) {
+        const N = r.N.eval(b.L), Q = r.Q.eval(b.L), M = r.M.eval(b.L);
+        const axial = scale(b.e, -N), shear = scale(b.n, Q);
+        elems.push({ label: `${nm} (fin)`, dir: scale(b.e, -1), axial, shear, F: add(axial, shear), M: -M, tipo: 'barra', esf: { N, Q, M } });
+      }
+    }
+    {
+      for (const f of names.forces) if (f.node === id) elems.push({ label: f.name, F: f.F, M: 0, tipo: 'carga' });
+      for (const c of names.couples) if (c.node === id) elems.push({ label: c.name, F: vec(0, 0), M: c.M, tipo: 'carga' });
+      sol.unknowns.forEach((un, j) => {
+        if (un.source !== 'vinculo' || un.node !== id) return;
+        const v = sol.values[j];
+        elems.push(un.kind === 'momento' ? { label: un.name, F: vec(0, 0), M: v, tipo: 'reaccion' } : { label: un.name, F: scale(un.dir, v), M: 0, tipo: 'reaccion' });
+      });
+    }
+    const sum = (f: (e: NudoElem) => number) => elems.reduce((s2, e) => s2 + f(e), 0);
+    const terms = (f: (e: NudoElem) => number) => joinTerms(elems.map(f).filter((v) => Math.abs(v) > 1e-10).map(signed));
+    const bars = elems.filter((e) => e.tipo === 'barra').map((e) => e.label.split(' ')[0]);
+    blocks.push({ t: 'p', text: `Nudo ${id}: se unen las barras ${bars.join(', ')}.` });
+    blocks.push({ t: 'nudo', node: id, elems });
+    blocks.push({
+      t: 'table',
+      head: ['Elemento', 'N', 'Q', 'Mf', `F_{x} sobre el nudo [${F}]`, `F_{y} [${F}]`, `M [${ML}]`],
+      rows: elems.map((e) => [e.tipo === 'barra' ? `Barra ${e.label}` : e.label, e.esf ? fmt(e.esf.N) : '', e.esf ? fmt(e.esf.Q) : '', e.esf ? fmt(e.esf.M) : '', fmt(e.F.x), fmt(e.F.y), fmt(e.M)]),
+    });
+    const sx = sum((e) => e.F.x), sy = sum((e) => e.F.y), sm = sum((e) => e.M);
+    blocks.push({ t: 'eq', text: `ΣF_{x} = ${terms((e) => e.F.x)} = ${fmt(sx)}` });
+    blocks.push({ t: 'eq', text: `ΣF_{y} = ${terms((e) => e.F.y)} = ${fmt(sy)}` });
+    blocks.push({ t: 'eq', text: `ΣM_{${id}} = ${terms((e) => e.M)} = ${fmt(sm)}` });
+    const scl = Math.max(1, ...elems.map((e) => Math.max(Math.abs(e.F.x), Math.abs(e.F.y), Math.abs(e.M))));
+    const ok = Math.abs(sx) < 1e-6 * scl && Math.abs(sy) < 1e-6 * scl && Math.abs(sm) < 1e-6 * scl;
+    blocks.push({ t: ok ? 'ok' : 'warn', text: ok ? `El nudo ${id} está en equilibrio.` : `El nudo ${id} no cierra: revisar los datos.` });
+  }
+  return { id: 'nudos', titulo: '11 – Equilibrio de nudos', blocks };
 }
