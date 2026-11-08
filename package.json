@@ -1,0 +1,16 @@
+{
+  "name": "calculadora-esfuerzos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cálculo y visualización de esfuerzos característicos (N, Q, Mf) en estructuras planas isostáticas, según la cátedra Estática 67.02 (ITBA).",
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
