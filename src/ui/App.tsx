@@ -65,7 +65,7 @@ function NumIn({ value, onChange, label, width = 64 }: { value: number; onChange
   );
 }
 
-export function App() {
+export function App({ onHome }: { onHome?: () => void }) {
   const initial = useMemo(load, []);
   const [model, setModel] = useState<Model>(initial.model);
   const [unidadesId, setUnidadesId] = useState(initial.unidades);
@@ -156,6 +156,11 @@ export function App() {
       // Los nodos detectados automáticamente (cruces, cargas) se agregan al modelo al usarlos.
       const nodeFor = () => (ev.node && m.nodes.some((n) => n.id === ev.node) ? ev.node : nodeAt(ev.p));
       switch (tool) {
+        case 'nodo': {
+          const n = nodeFor();
+          setAviso(`Nodo ${n} en (${fmt(ev.p.x)}; ${fmt(ev.p.y)}) ${units.longitud}.`);
+          return;
+        }
         case 'barra': {
           if (!pending) return void setPending(ev.p);
           if (norm(sub(pending, ev.p)) < 1e-9) return void setPending(null);
@@ -249,6 +254,7 @@ export function App() {
     <div className="app">
       <header className="cabecera">
         <div className="titulo">
+          {onHome && <button className="volver" onClick={onHome}>← Inicio</button>}
           <h1>Esfuerzos característicos</h1>
           <p>Vigas y pórticos isostáticos según el método de la cátedra Estática 67.02, ITBA</p>
         </div>
@@ -532,9 +538,10 @@ function LoadRow({ l, nodeIds, barIds, units, onChange, onRemove }: { l: LoadDef
   );
 }
 
-type Tool = 'barra' | 'movil' | 'fijo' | 'empotramiento' | 'articulacion' | 'puntual' | 'cupla' | 'distribuida' | 'borrar';
+type Tool = 'nodo' | 'barra' | 'movil' | 'fijo' | 'empotramiento' | 'articulacion' | 'puntual' | 'cupla' | 'distribuida' | 'borrar';
 
 const TOOLS: { id: Tool; nombre: string; ayuda: string }[] = [
+  { id: 'nodo', nombre: 'Nodo', ayuda: 'Clic en la grilla para crear un nodo; si cae sobre una barra, la divide.' },
   { id: 'barra', nombre: 'Barra', ayuda: 'Clic en el inicio y clic en el fin; sigue desde el último punto. Esc termina.' },
   { id: 'movil', nombre: 'Apoyo móvil', ayuda: 'Clic en un nodo o sobre una barra.' },
   { id: 'fijo', nombre: 'Apoyo fijo', ayuda: 'Clic en un nodo o sobre una barra.' },
@@ -559,11 +566,8 @@ function Herramientas({ tool, setTool, grid, setGrid, unidad }: { tool: Tool | n
         ))}
         <label className="herr-grilla">
           Grilla
-          <select value={grid} onChange={(e) => setGrid(+e.target.value)}>
-            {[0.1, 0.25, 0.5, 1, 2, 5, 10].map((g) => (
-              <option key={g} value={g}>{String(g).replace('.', ',')} {unidad}</option>
-            ))}
-          </select>
+          <NumIn label="Paso de la grilla" width={58} value={grid} onChange={(v) => v > 0 && setGrid(v)} />
+          {unidad}
         </label>
       </div>
       {actual && <p className="ayuda">{actual.ayuda}</p>}

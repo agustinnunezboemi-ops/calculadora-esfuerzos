@@ -207,3 +207,35 @@ sub, sup { font-size: 0.72em; }
 .lamina .editor-guia text { font: 500 12px 'Barlow Condensed', Barlow, sans-serif; fill: var(--pos); }
 .lamina .barra-fantasma { stroke: var(--pos); stroke-width: 3; stroke-dasharray: 6 5; }
 .aviso { font-size: 13px; background: color-mix(in srgb, var(--pos) 10%, transparent); border-left: 3px solid var(--pos); padding: 4px 8px; margin: 4px 0; }
+
+/* Menú de inicio */
+.inicio { max-width: 880px; margin: 0 auto; padding: 48px 16px; }
+.inicio-cabecera { border-bottom: 2px solid var(--tinta); padding-bottom: 14px; margin-bottom: 24px; }
+.inicio-cabecera h1 { font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 600; font-size: 46px; line-height: 1; margin: 0; }
+.inicio-cabecera p { margin: 8px 0 0; color: var(--tinta-2); max-width: 60ch; }
+.inicio-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.inicio-opcion {
+  width: 100%; display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: center; text-align: left;
+  background: var(--papel-2); border: 1px solid var(--borde); border-radius: 6px; padding: 16px 20px;
+}
+.inicio-opcion:not(:disabled):hover { border-color: var(--tinta); box-shadow: inset 4px 0 0 var(--seccion); }
+.inicio-opcion:disabled { cursor: default; opacity: 0.62; }
+.inicio-dibujo svg { width: 150px; height: auto; display: block; }
+.inicio-texto { display: grid; gap: 4px; }
+.inicio-nombre { font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 600; font-size: 24px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.inicio-estado { font-family: Barlow, sans-serif; font-size: 13px; font-weight: 500; color: var(--tinta-2); border: 1px solid var(--borde); border-radius: 3px; padding: 0 6px; }
+.inicio-que { color: var(--tinta-2); max-width: 62ch; }
+.ic-barra { stroke: var(--tinta); stroke-width: 3; fill: none; stroke-linejoin: round; }
+.ic-barra.fina { stroke-width: 2.4; }
+.ic-diag { fill: color-mix(in srgb, var(--neg) 10%, transparent); stroke: var(--tinta); stroke-width: 1.2; }
+.ic-rayado { stroke: var(--neg); stroke-width: 1; }
+.ic-apoyo { fill: var(--papel-2); stroke: var(--tinta); stroke-width: 1.2; }
+.ic-nodo { fill: var(--papel-2); stroke: var(--tinta); stroke-width: 1.6; }
+.ic-seccion { fill: color-mix(in srgb, var(--pos) 10%, transparent); stroke: var(--tinta); stroke-width: 2; }
+.volver { font-size: 13px; padding: 2px 8px; margin-bottom: 6px; }
+@media (max-width: 560px) {
+  .inicio { padding: 24px 12px; }
+  .inicio-cabecera h1 { font-size: 36px; }
+  .inicio-opcion { grid-template-columns: 1fr; gap: 10px; }
+  .inicio-dibujo svg { width: 120px; }
+}
