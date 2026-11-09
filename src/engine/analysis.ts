@@ -128,6 +128,7 @@ export function reactionDir(s: SupportDef): Vec {
 // ---------- análisis ----------
 
 export function analyze(model: Model): Solution {
+  if (!model.bars.length) throw new ModelError('Dibujá al menos una barra (herramientas Nodo y Barra).');
   const st = normalize(model);
   const chapa = chapasOf(st);
   const nChapas = chapa.length ? Math.max(...chapa) + 1 : 0;

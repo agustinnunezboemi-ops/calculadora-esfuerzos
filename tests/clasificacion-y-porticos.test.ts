@@ -106,3 +106,7 @@ test('apoyo móvil sobre plano vertical: la reacción se supone hacia +x (SRG)',
   assert.deepEqual([u.dir.x, u.dir.y], [1, 0]);
   close(reaction(s, 'R_{Bx}'), 5, 'R_Bx = +5 (hacia la derecha)');
 });
+
+test('sin barras: error claro en lugar de un resultado', () => {
+  assert.throws(() => analyze({ nodes: [{ id: 'A', x: 0, y: 0 }], bars: [], supports: [], loads: [] }), /al menos una barra/);
+});

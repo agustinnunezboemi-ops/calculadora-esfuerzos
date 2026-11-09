@@ -126,3 +126,19 @@ test('barra de fuerza nula por la regla de dos barras', () => {
   close(s.forces.BD, 0, 'BD');
   close(s.forces.CD, 0, 'CD');
 });
+
+test('TP N°5 · 1i (lb, ft), cargado por Agustín: simetría y nodo A', async () => {
+  const { readFileSync } = await import('node:fs');
+  const s = solveTruss(JSON.parse(readFileSync(new URL('./casos/tp5-1i.json', import.meta.url), 'utf8')));
+  assert.equal(s.status, 'isostatico', s.motivo);
+  const R = (n: string) => s.reactions.find((r) => r.name === n)!.value;
+  close(R('R_{Ay}'), 1200, 'R_A');
+  close(R('R_{Ey}'), 1200, 'R_E');
+  // Nodo A: 0,6·F_FA + 1200 − 300 = 0 → F_FA = −1500; F_AB + 0,8·F_FA = 0 → 1200
+  close(s.forces.FA, -1500, 'FA');
+  close(s.forces.AB, 1200, 'AB');
+  close(s.forces.EG, -1500, 'EG (simétrica de FA)');
+  close(s.forces.HF, s.forces.GH, 'HF = GH por simetría');
+  for (const id of ['FB', 'DG']) assert.ok(s.zero.some((z) => z.bar === id), `${id} nula por inspección`);
+  for (const id of ['HC', 'GC', 'FC']) close(s.forces[id], 0, `${id} = 0 con esta carga`);
+});

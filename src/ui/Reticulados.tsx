@@ -4,9 +4,10 @@ import { solveTruss, sectionMethod, TrussSolution, TrussError } from '../engine/
 import { buildTrussSteps, buildSectionSteps, estado } from '../engine/trussSteps.ts';
 import { Step, fmt } from '../engine/steps.ts';
 import { Structure } from '../engine/normalize.ts';
-import { BlockView, NumIn } from './App.tsx';
+import { BlockView, NumIn, limpiar } from './App.tsx';
 import { Arrow, Support } from './Drawing.tsx';
 import { UNIT_SYSTEMS, convertModel } from './examples.ts';
+import { guardarJson } from './guardar.ts';
 
 const STORAGE = 'calculadora-reticulados:v1';
 const bars = (...ids: string[]) => ids.map((id) => ({ id, from: id[0], to: id[1] }));
@@ -126,7 +127,7 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
     setModel((m) => {
       const c = structuredClone(m);
       fn(c);
-      return c;
+      return limpiar(c);
     });
   const nodeIds = model.nodes.map((n) => n.id);
   const newId = (m: Model) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !m.nodes.some((n) => n.id === l)) ?? `N${m.nodes.length + 1}`;
@@ -185,13 +186,9 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
     });
   };
 
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ version: 1, tipo: 'reticulado', unidades: unidadesId, ...model }, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'reticulado.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
+  const exportJson = async () => {
+    const n = await guardarJson({ version: 1, tipo: 'reticulado', unidades: unidadesId, ...model }, 'reticulado.json');
+    if (n) setAviso(`Guardado como ${n}.`);
   };
   const importJson = (f: File) =>
     f.text().then((t) => {
@@ -378,7 +375,7 @@ function TrussDrawing({ model, sol, tool, grid, pending, corte, onEdit, units }:
 }) {
   const ref = useRef<SVGSVGElement>(null);
   const [mouse, setMouse] = useState<Vec | null>(null);
-  const pts = model.nodes.length ? model.nodes : [{ id: '', x: 0, y: 0 }, { id: '', x: 4, y: 3 }];
+  const pts = model.nodes.length >= 2 ? model.nodes : [...model.nodes, { id: '', x: 0, y: 0 }, { id: '', x: 4, y: 3 }];
   let minX = Math.min(...pts.map((n) => n.x)), maxX = Math.max(...pts.map((n) => n.x));
   let minY = Math.min(...pts.map((n) => n.y)), maxY = Math.max(...pts.map((n) => n.y));
   if (tool && tool !== 'cortar') {

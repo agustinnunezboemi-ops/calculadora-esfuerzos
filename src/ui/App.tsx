@@ -5,6 +5,7 @@ import { normalize, Structure } from '../engine/normalize.ts';
 import { buildSteps, Step, Block, fmt } from '../engine/steps.ts';
 import { Drawing, Hover, EditEvent } from './Drawing.tsx';
 import { NudoDiagram } from './Nudo.tsx';
+import { guardarJson } from './guardar.ts';
 import { EXAMPLES, UNIT_SYSTEMS, convertModel } from './examples.ts';
 
 const STORAGE = 'calculadora-esfuerzos:v1';
@@ -111,7 +112,12 @@ export function App({ onHome }: { onHome?: () => void }) {
       try {
         st = normalize(model);
       } catch {
-        /* geometría inválida */
+        // Para poder seguir editando, se dibuja lo que sea válido (o una grilla vacía).
+        try {
+          st = normalize(limpiar(structuredClone(model)));
+        } catch {
+          st = normalize({ nodes: [], bars: [], supports: [], hinges: [], loads: [] });
+        }
       }
       return { st, sol: null, steps: [] as Step[], error: (e as Error).message };
     }
@@ -121,7 +127,7 @@ export function App({ onHome }: { onHome?: () => void }) {
     setModel((m) => {
       const c = structuredClone(m);
       fn(c);
-      return c;
+      return limpiar(c);
     });
 
   const nodeIds = model.nodes.map((n) => n.id);
@@ -156,11 +162,9 @@ export function App({ onHome }: { onHome?: () => void }) {
       // Los nodos detectados automáticamente (cruces, cargas) se agregan al modelo al usarlos.
       const nodeFor = () => (ev.node && m.nodes.some((n) => n.id === ev.node) ? ev.node : nodeAt(ev.p));
       switch (tool) {
-        case 'nodo': {
-          const n = nodeFor();
-          setAviso(`Nodo ${n} en (${fmt(ev.p.x)}; ${fmt(ev.p.y)}) ${units.longitud}.`);
+        case 'nodo':
+          nodeFor();
           return;
-        }
         case 'barra': {
           if (!pending) return void setPending(ev.p);
           if (norm(sub(pending, ev.p)) < 1e-9) return void setPending(null);
@@ -223,13 +227,9 @@ export function App({ onHome }: { onHome?: () => void }) {
     });
   };
 
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify({ version: 1, unidades: unidadesId, ...model }, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'estructura.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
+  const exportJson = async () => {
+    const n = await guardarJson({ version: 1, tipo: 'esfuerzos', unidades: unidadesId, ...model }, 'estructura.json');
+    if (n) setAviso(`Guardado como ${n}.`);
   };
   const importJson = (f: File) => {
     f.text().then((t) => {
@@ -573,4 +573,15 @@ function Herramientas({ tool, setTool, grid, setGrid, unidad }: { tool: Tool | n
       {actual && <p className="ayuda">{actual.ayuda}</p>}
     </div>
   );
+}
+
+/** Quita referencias huérfanas: barras sin nodos, vínculos, articulaciones y cargas sin nodo o barra. */
+export function limpiar(m: Model): Model {
+  const ns = new Set(m.nodes.map((n) => n.id));
+  m.bars = m.bars.filter((b) => ns.has(b.from) && ns.has(b.to) && b.from !== b.to);
+  const bs = new Set(m.bars.map((b) => b.id));
+  m.supports = m.supports.filter((x) => ns.has(x.node));
+  m.hinges = (m.hinges ?? []).filter((h) => ns.has(h.node));
+  m.loads = m.loads.filter((l) => (l.type === 'distribuida' ? bs.has(l.bar) : l.bar !== undefined ? bs.has(l.bar) : l.node !== undefined && ns.has(l.node)));
+  return m;
 }

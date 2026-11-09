@@ -45,8 +45,11 @@ const W = 760;
 export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHeight = 620, unidades, hover, onHover, tool, grid = 0.5, onEdit, pending }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mouse, setMouse] = useState<Vec | null>(null);
-  const xs = st.nodes.map((n) => n.p.x);
-  const ys = st.nodes.map((n) => n.p.y);
+  // Sin nodos (estructura borrada) se muestra una grilla de 4 × 3 para empezar a dibujar.
+  // Con 0 o 1 nodo se mantiene un encuadre fijo de 4 × 3 para que la vista no salte al dibujar.
+  const few = st.nodes.length < 2;
+  const xs = [...st.nodes.map((n) => n.p.x), ...(few ? [0, 4] : [])];
+  const ys = [...st.nodes.map((n) => n.p.y), ...(few ? [0, 3] : [])];
   let minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
   if (tool) {
     // Al editar se aleja la vista para dejar grilla libre alrededor de la estructura.
