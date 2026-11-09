@@ -32,7 +32,7 @@ const OPCIONES: Opcion[] = [
     id: 'reticulados',
     nombre: 'Reticulados',
     que: 'Fuerza en cada barra por el método de los nodos y el de las secciones, como en el TP N°5. Tracción y compresión.',
-    estado: 'diseno',
+    estado: 'lista',
     dibujo: (
       <svg viewBox="0 0 120 70" aria-hidden>
         <polyline points="10,55 35,15 60,55 85,15 110,55 10,55" className="ic-barra fina" />

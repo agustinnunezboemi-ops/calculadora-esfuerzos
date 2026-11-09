@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { Inicio, Seccion } from './Inicio.tsx';
+import { Reticulados } from './Reticulados.tsx';
 import './styles.css';
 
-/** Navegación por #hash: '' = menú de inicio, '#esfuerzos' = calculadora de esfuerzos. */
+/** Navegación por #hash: '' = menú de inicio, '#esfuerzos', '#reticulados'. */
 function Root() {
   const leer = () => (location.hash.replace('#', '') as Seccion) || null;
   const [seccion, setSeccion] = useState<Seccion | null>(leer);
@@ -19,6 +20,7 @@ function Root() {
     window.scrollTo(0, 0);
   };
   if (seccion === 'esfuerzos') return <App onHome={() => ir(null)} />;
+  if (seccion === 'reticulados') return <Reticulados onHome={() => ir(null)} />;
   return <Inicio onOpen={ir} />;
 }
 

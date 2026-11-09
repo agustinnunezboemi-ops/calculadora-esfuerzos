@@ -239,3 +239,16 @@ sub, sup { font-size: 0.72em; }
   .inicio-opcion { grid-template-columns: 1fr; gap: 10px; }
   .inicio-dibujo svg { width: 120px; }
 }
+
+/* Reticulados */
+.lamina .rt-barra { stroke: var(--tinta); stroke-linecap: round; }
+.lamina .rt-barra.traccion { stroke: var(--pos); }
+.lamina .rt-barra.compresion { stroke: var(--neg); }
+.lamina .rt-barra.nula { stroke: var(--tinta-2); stroke-dasharray: 6 5; opacity: 0.7; }
+.lamina .rt-barra.cortada { stroke: var(--seccion); }
+.lamina .rt-valor { font: 600 13px 'Barlow Condensed', Barlow, sans-serif; fill: var(--tinta); paint-order: stroke; stroke: var(--papel-2); stroke-width: 3px; }
+.lamina .rt-valor.traccion { fill: var(--pos); }
+.lamina .rt-valor.compresion { fill: var(--neg); }
+.lamina .rt-nodo { fill: var(--papel-2); stroke: var(--tinta); stroke-width: 1.8; }
+.lamina .rt-nodo.activo { fill: var(--seccion); }
+.fuerza-celda { font-variant-numeric: tabular-nums; color: var(--tinta-2); white-space: nowrap; }

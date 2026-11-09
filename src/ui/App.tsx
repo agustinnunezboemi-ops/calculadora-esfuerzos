@@ -45,7 +45,7 @@ export function Math_({ text }: { text: string }) {
   return <>{parts}</>;
 }
 
-function NumIn({ value, onChange, label, width = 64 }: { value: number; onChange: (v: number) => void; label: string; width?: number }) {
+export function NumIn({ value, onChange, label, width = 64 }: { value: number; onChange: (v: number) => void; label: string; width?: number }) {
   const [txt, setTxt] = useState(String(value).replace('.', ','));
   useEffect(() => {
     if (num(txt) !== value) setTxt(String(value).replace('.', ','));
@@ -471,7 +471,7 @@ export function App({ onHome }: { onHome?: () => void }) {
   );
 }
 
-function BlockView({ b }: { b: Block }) {
+export function BlockView({ b }: { b: Block }) {
   switch (b.t) {
     case 'p': return <p><Math_ text={b.text} /></p>;
     case 'eq': return <p className="ecuacion"><Math_ text={b.text} /></p>;

@@ -318,7 +318,7 @@ function sample(p: { eval: (x: number) => number }, L: number): [number, number]
   return Array.from({ length: n + 1 }, (_, i) => [(L * i) / n, p.eval((L * i) / n)] as [number, number]);
 }
 
-function Arrow({ p, d, label, reaction, tail }: { p: Vec; d: Vec; label: string; reaction?: boolean; tail?: boolean }) {
+export function Arrow({ p, d, label, reaction, tail }: { p: Vec; d: Vec; label: string; reaction?: boolean; tail?: boolean }) {
   const len = 46;
   // Cargas: la punta toca el nodo. Reacciones: nacen en el nodo (tail).
   const start = tail ? add(p, scale(d, 6)) : sub(p, scale(d, len + 4));
@@ -375,7 +375,7 @@ function Dist({ b, d, T, D, k, st }: { b: Structure['bars'][number]; d: { q1: nu
   );
 }
 
-function Support({ s, p, st, T }: { s: SupportDef; p: Vec; st: Structure; T: (p: Vec) => Vec }) {
+export function Support({ s, p, st, T }: { s: SupportDef; p: Vec; st: Structure; T: (p: Vec) => Vec }) {
   if (s.type === 'empotramiento') {
     // Pared perpendicular a la barra que llega al nodo, del lado de afuera.
     const b = st.bars.find((x) => x.from === s.node || x.to === s.node);
