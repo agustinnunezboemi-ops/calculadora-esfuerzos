@@ -18,6 +18,13 @@ export function Ayuda({ onHome }: { onHome: () => void }) {
         <li><b>Desde un archivo:</b> «Abrir .json». También hay ejemplos de los TP en «Cargar un ejemplo».</li>
       </ol>
 
+      <h2>Cargar desde una foto (IA, opcional)</h2>
+      <ol>
+        <li>Conseguí una clave gratuita en aistudio.google.com («Get API key»).</li>
+        <li>Tocá «Desde foto (IA)», pegá la clave, subí la foto del ejercicio (o pegala con Ctrl+V) y, si querés, escribí el enunciado.</li>
+        <li>«Interpretar y cargar» pone la propuesta en el editor. Revisala: si algo está mal, corregilo o tocá «Deshacer». Los cálculos los hace la calculadora, nunca la IA.</li>
+      </ol>
+
       <h2>Convenciones</h2>
       <ul>
         <li>Sistema de referencia global: x hacia la derecha, y hacia arriba, giro antihorario positivo. Ángulos de cargas medidos desde x (−90° = hacia abajo).</li>

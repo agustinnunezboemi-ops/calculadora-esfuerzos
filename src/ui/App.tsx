@@ -7,6 +7,8 @@ import { Drawing, Hover, EditEvent } from './Drawing.tsx';
 import { NudoDiagram } from './Nudo.tsx';
 import { guardarJson } from './guardar.ts';
 import { svgToPng, imprimirInforme } from './exportar.ts';
+import { PanelIA } from './PanelIA.tsx';
+import type { Propuesta } from '../ai/gemini.ts';
 import { EXAMPLES, UNIT_SYSTEMS, convertModel } from './examples.ts';
 
 const STORAGE = 'calculadora-esfuerzos:v1';
@@ -81,6 +83,16 @@ export function App({ onHome }: { onHome?: () => void }) {
   const [grid, setGrid] = useState(0.5);
   const [pending, setPending] = useState<Vec | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [ia, setIa] = useState(false);
+  const [previo, setPrevio] = useState<{ model: Model; unidades: string } | null>(null);
+  const aplicarIA = (p: Propuesta) => {
+    setPrevio({ model, unidades: unidadesId });
+    setModel(p.model);
+    if (p.unidades) setUnidadesId(p.unidades);
+    setHighlight(null);
+    setIa(false);
+    setAviso(`Estructura propuesta por la IA: revisá nodos, vínculos y cargas antes de usar los resultados.${p.notas.length ? ' Notas: ' + p.notas.join(' ') : ''}`);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -295,6 +307,7 @@ export function App({ onHome }: { onHome?: () => void }) {
           </label>
           <button onClick={() => setModel({ nodes: [{ id: 'A', x: 0, y: 0 }, { id: 'B', x: 4, y: 0 }], bars: [{ id: 'AB', from: 'A', to: 'B' }], supports: [], hinges: [], loads: [] })}>Nuevo</button>
           <button onClick={() => fileRef.current?.click()}>Abrir .json</button>
+          <button onClick={() => setIa((v) => !v)} aria-expanded={ia}>Desde foto (IA)</button>
           <button onClick={exportJson}>Guardar .json</button>
           <button onClick={() => imprimirInforme(setTodo)} title="Abre el diálogo de impresión: elegí «Guardar como PDF»">Informe PDF</button>
           <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => {
@@ -306,6 +319,14 @@ export function App({ onHome }: { onHome?: () => void }) {
         </div>
       </header>
 
+      {ia && <PanelIA tipo="esfuerzos" onPropuesta={aplicarIA} onCerrar={() => setIa(false)} />}
+      {previo && aviso?.startsWith('Estructura propuesta') && (
+        <p className="aviso" role="status">
+          {aviso}{' '}
+          <button onClick={() => { setModel(previo.model); setUnidadesId(previo.unidades); setPrevio(null); setAviso(null); }}>Deshacer</button>{' '}
+          <button onClick={() => { setPrevio(null); setAviso(null); }}>Aceptar</button>
+        </p>
+      )}
       <nav className="pestanas" aria-label="Secciones">
         {(['editor', 'dibujo', 'pasos'] as const).map((t) => (
           <button key={t} className={tab === t ? 'activa' : ''} onClick={() => setTab(t)}>

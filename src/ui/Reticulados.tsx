@@ -9,6 +9,8 @@ import { Arrow, Support } from './Drawing.tsx';
 import { UNIT_SYSTEMS, convertModel } from './examples.ts';
 import { guardarJson } from './guardar.ts';
 import { imprimirInforme } from './exportar.ts';
+import { PanelIA } from './PanelIA.tsx';
+import type { Propuesta } from '../ai/gemini.ts';
 
 const STORAGE = 'calculadora-reticulados:v1';
 const bars = (...ids: string[]) => ids.map((id) => ({ id, from: id[0], to: id[1] }));
@@ -94,6 +96,16 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
   const [open, setOpen] = useState<Record<string, boolean>>({ rigidez: true });
   const [tab, setTab] = useState<'editor' | 'dibujo' | 'pasos'>('dibujo');
   const [aviso, setAviso] = useState<string | null>(null);
+  const [ia, setIa] = useState(false);
+  const [previo, setPrevio] = useState<{ model: Model; unidades: string } | null>(null);
+  const aplicarIA = (p: Propuesta) => {
+    setPrevio({ model, unidades: unidadesId });
+    setModel(p.model);
+    if (p.unidades) setUnidadesId(p.unidades);
+    setCorte([]);
+    setIa(false);
+    setAviso(`Estructura propuesta por la IA: revisá nodos, vínculos y cargas antes de usar los resultados.${p.notas.length ? ' Notas: ' + p.notas.join(' ') : ''}`);
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const units = UNIT_SYSTEMS.find((u) => u.id === unidadesId) ?? UNIT_SYSTEMS[0];
 
@@ -235,12 +247,21 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
           </label>
           <button onClick={() => { setModel({ nodes: [], bars: [], supports: [], hinges: [], loads: [] }); setCorte([]); setTool('nodo'); }}>Nuevo</button>
           <button onClick={() => fileRef.current?.click()}>Abrir .json</button>
+          <button onClick={() => setIa((v) => !v)} aria-expanded={ia}>Desde foto (IA)</button>
           <button onClick={exportJson}>Guardar .json</button>
           <button onClick={() => imprimirInforme(setTodo)} title="Abre el diálogo de impresión: elegí «Guardar como PDF»">Informe PDF</button>
           <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />
         </div>
       </header>
 
+      {ia && <PanelIA tipo="reticulado" onPropuesta={aplicarIA} onCerrar={() => setIa(false)} />}
+      {previo && aviso?.startsWith('Estructura propuesta') && (
+        <p className="aviso" role="status">
+          {aviso}{' '}
+          <button onClick={() => { setModel(previo.model); setUnidadesId(previo.unidades); setPrevio(null); setAviso(null); }}>Deshacer</button>{' '}
+          <button onClick={() => { setPrevio(null); setAviso(null); }}>Aceptar</button>
+        </p>
+      )}
       <nav className="pestanas" aria-label="Secciones">
         {(['editor', 'dibujo', 'pasos'] as const).map((t) => (
           <button key={t} className={tab === t ? 'activa' : ''} onClick={() => setTab(t)}>{t === 'editor' ? 'Datos' : t === 'dibujo' ? 'Reticulado' : 'Paso a paso'}</button>
