@@ -12,6 +12,8 @@ import { imprimirInforme } from './exportar.ts';
 import { PanelIA } from './PanelIA.tsx';
 import type { Propuesta } from '../ai/gemini.ts';
 
+import tp5_1i from '../../tests/casos/tp5-1i.json';
+
 const STORAGE = 'calculadora-reticulados:v1';
 const bars = (...ids: string[]) => ids.map((id) => ({ id, from: id[0], to: id[1] }));
 const P = (node: string, value: number, angle = -90) => ({ type: 'puntual' as const, node, value, angle });
@@ -60,6 +62,12 @@ const EJEMPLOS: { id: string; nombre: string; unidades: string; model: Model }[]
       supports: [{ node: 'D', type: 'movil' }, { node: 'F', type: 'fijo' }],
       loads: [P('A', 1), P('B', 4), P('C', 1), P('E', 2.4)],
     },
+  },
+  {
+    id: 'tp5-1i',
+    nombre: 'TP N°5 · 1i (cercha simétrica)',
+    unidades: (tp5_1i as { unidades?: string }).unidades ?? 'lb-ft',
+    model: { nodes: tp5_1i.nodes, bars: tp5_1i.bars, supports: tp5_1i.supports as Model['supports'], hinges: [], loads: tp5_1i.loads as Model['loads'] },
   },
 ];
 

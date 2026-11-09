@@ -1,4 +1,18 @@
 import { Model } from '../engine/model.ts';
+import tp4_1b from '../../tests/casos/tp4-1b.json';
+import tp4_3c from '../../tests/casos/tp4-3c.json';
+import tp4_5b from '../../tests/casos/tp4-5b.json';
+import tp4_5e from '../../tests/casos/tp4-5e.json';
+import tp4_6 from '../../tests/casos/tp4-6.json';
+import tp4_9c from '../../tests/casos/tp4-9c.json';
+import tp4_9d from '../../tests/casos/tp4-9d.json';
+
+/** Ejercicios cargados por Agustín y verificados contra las respuestas del TP N°4. */
+const desdeArchivo = (j: unknown): Model => {
+  const o = j as Model;
+  return { nodes: o.nodes, bars: o.bars, supports: o.supports, hinges: o.hinges ?? [], loads: o.loads };
+};
+const unidadesDe = (j: unknown) => ((j as { unidades?: string }).unidades ?? 'kN-m');
 
 export interface Example {
   id: string;
@@ -83,6 +97,13 @@ export const EXAMPLES: Example[] = [
       ],
     },
   },
+  { id: 'tp4-1b', nombre: 'TP N°4 · 1b (voladizo, dos cargas)', unidades: unidadesDe(tp4_1b), model: desdeArchivo(tp4_1b) },
+  { id: 'tp4-3c', nombre: 'TP N°4 · 3c (viga con ménsulas)', unidades: unidadesDe(tp4_3c), model: desdeArchivo(tp4_3c) },
+  { id: 'tp4-5b', nombre: 'TP N°4 · 5b (pórtico en T)', unidades: unidadesDe(tp4_5b), model: desdeArchivo(tp4_5b) },
+  { id: 'tp4-5e', nombre: 'TP N°4 · 5e (pórtico con cupla)', unidades: unidadesDe(tp4_5e), model: desdeArchivo(tp4_5e) },
+  { id: 'tp4-6', nombre: 'TP N°4 · 6 (pórtico con columna central)', unidades: unidadesDe(tp4_6), model: desdeArchivo(tp4_6) },
+  { id: 'tp4-9c', nombre: 'TP N°4 · 9c (dos chapas)', unidades: unidadesDe(tp4_9c), model: desdeArchivo(tp4_9c) },
+  { id: 'tp4-9d', nombre: 'TP N°4 · 9d (dos chapas)', unidades: unidadesDe(tp4_9d), model: desdeArchivo(tp4_9d) },
   {
     id: 'portico-l',
     nombre: 'Pórtico en L (columna y viga)',
@@ -111,6 +132,10 @@ export const EXAMPLES: Example[] = [
     },
   },
 ];
+
+// Orden del menú: módulo 10, TP N°4 por número de ejercicio y luego los demás.
+const rango = (id: string) => (id.startsWith('m10') ? `0${id}` : id.startsWith('tp4-') ? `1${id.slice(4).replace(/^(\d)([a-z]?)$/, '0$1$2')}` : `2${id}`);
+EXAMPLES.sort((a, b) => rango(a.id).localeCompare(rango(b.id)));
 
 export const UNIT_SYSTEMS: { id: string; nombre: string; fuerza: string; longitud: string }[] = [
   { id: 'kN-m', nombre: 'SI · kN y m', fuerza: 'kN', longitud: 'm' },
