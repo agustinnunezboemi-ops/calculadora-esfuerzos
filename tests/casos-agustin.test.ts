@@ -73,3 +73,29 @@ test('TP N°4 · 6: pórtico con columna central, cupla y voladizos (coincide co
   close(at(s, 'M', 'F', 'der'), -12, 'Mf der (errata del TP: dice 12)');
   close(at(s, 'M', 'G', 'izq'), 0, 'Mg');
 });
+
+test('TP N°4 · 9c: dos chapas con articulación en C (coincide con todas las respuestas del TP)', () => {
+  const s = solved(caso('tp4-9c.json'));
+  assert.equal(s.classification.chapas, 2);
+  const tramo = (a: string, b: string) => s.bars.find((r) => r.bar.from === a && r.bar.to === b)!;
+  const AB = tramo('A', 'B'), BC = tramo('B', 'C'), CD = tramo('C', 'D'), DE = tramo('D', 'E'), FD = tramo('F', 'D');
+  // N: Na = Nb izq = Nd der = Ne = 0; Nb der = Nc = Nd izq = −20; Nf = Nd inf = −30
+  close(AB.N.eval(0), 0, 'Na');
+  close(BC.N.eval(0), -20, 'Nb der');
+  close(CD.N.eval(CD.bar.L), -20, 'Nd izq');
+  close(DE.N.eval(0), 0, 'Nd der');
+  close(FD.N.eval(0), -30, 'Nf');
+  close(FD.N.eval(FD.bar.L), -30, 'Nd inf');
+  // Q: Qa..Qd izq = 0; Qd der = Qe = 30; Qf = −10; Qd inf = 20
+  for (const r of [AB, BC, CD]) close(r.Q.eval(0), 0, `Q en ${r.bar.id}`);
+  close(DE.Q.eval(0), 30, 'Qd der');
+  close(FD.Q.eval(0), -10, 'Qf');
+  close(FD.Q.eval(FD.bar.L), 20, 'Qd inf');
+  // M: Ma = Mb = Mc = Md izq = Me = 0; Md der = −45; Mf = −60; Mmin en FD = −65; Md inf = −45
+  for (const r of [AB, BC, CD]) close(r.M.eval(r.bar.L), 0, `M en ${r.bar.id}`);
+  close(DE.M.eval(0), -45, 'Md der');
+  close(DE.M.eval(DE.bar.L), 0, 'Me');
+  close(FD.M.eval(0), -60, 'Mf');
+  close(s.extremes.min.M.valor, -65, 'Mfd mín');
+  close(FD.M.eval(FD.bar.L), -45, 'Md inf');
+});
