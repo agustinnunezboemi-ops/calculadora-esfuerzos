@@ -99,3 +99,65 @@ test('TP N°4 · 9c: dos chapas con articulación en C (coincide con todas las r
   close(s.extremes.min.M.valor, -65, 'Mfd mín');
   close(FD.M.eval(FD.bar.L), -45, 'Md inf');
 });
+
+test('TP N°4 · 3c: viga con ménsulas (las cargas llegan con su cupla de traslado)', () => {
+  // Las cargas de 400 N actúan sobre ménsulas a 0,15 m de C, D y E: se trasladan a la viga
+  // como 400 N hacia abajo más una cupla horaria de 400·0,15 = 60 N·m.
+  const s = solved(caso('tp4-3c.json'));
+  close(reaction(s, 'R_{Ay}'), 400, 'R_A');
+  close(reaction(s, 'R_{By}'), 800, 'R_B');
+  close(at(s, 'Q', 'A', 'der'), 400, 'Qa');
+  close(at(s, 'Q', 'C', 'izq'), 400, 'Qc izq');
+  close(at(s, 'Q', 'C', 'der'), 0, 'Qc der');
+  close(at(s, 'Q', 'D', 'izq'), 0, 'Qd izq');
+  close(at(s, 'Q', 'D', 'der'), -400, 'Qd der');
+  close(at(s, 'Q', 'E', 'izq'), -400, 'Qe izq');
+  close(at(s, 'Q', 'E', 'der'), -800, 'Qe der');
+});
+
+test('TP N°4 · 5e: pórtico recorrido de A a J (columna derecha de arriba hacia abajo)', () => {
+  const s = solved(caso('tp4-5e.json'));
+  const tr = (a: string, b: string) => s.bars.find((r) => r.bar.from === a && r.bar.to === b)!;
+  close(tr('A', 'B').N.eval(0), 1.458, 'Na = 1,46');
+  close(tr('D', 'E').N.eval(0), -3, 'Nd der = −3');
+  close(tr('G', 'H').N.eval(0), 1.042, 'Ng abajo = 1,04');
+  close(tr('B', 'C').Q.eval(0), -2, 'Qb der');
+  close(tr('C', 'D').Q.eval(0), -3, 'Qc der');
+  close(tr('D', 'E').Q.eval(0), -1.458, 'Qd der');
+  close(tr('E', 'F').Q.eval(0), -1.958, 'Qe');
+  close(tr('F', 'G').Q.eval(0), 1.042, 'Qf der');
+  close(tr('G', 'H').Q.eval(0), 3, 'Qg abajo');
+  close(tr('I', 'J').Q.eval(0), 2, 'Qj');
+  close(tr('C', 'D').M.eval(0), -0.668, 'Mc');
+  close(tr('D', 'E').M.eval(0), -1.667, 'Md');
+  close(tr('E', 'F').M.eval(0), -2.521, 'Me');
+  close(tr('F', 'G').M.eval(0), -3.0105, 'Mf');
+  close(tr('G', 'H').M.eval(0), -2.75, 'Mg');
+  close(tr('H', 'I').M.eval(0), -2, 'Mh');
+  close(tr('I', 'J').M.eval(0), -1, 'Mi abajo (después de la cupla)');
+  close(tr('I', 'J').M.eval(tr('I', 'J').bar.L), 0, 'Mj');
+});
+
+test('TP N°4 · 9d: dos chapas, N y Q iguales al TP; Mf igual en valor absoluto', () => {
+  const s = solved(caso('tp4-9d.json'));
+  const tr = (a: string, b: string) => s.bars.find((r) => r.bar.from === a && r.bar.to === b)!;
+  close(tr('C', 'B').N.eval(0), -26.667, 'N columna izquierda', 1e-4);
+  close(tr('F', 'G').N.eval(0), 20, 'Nf der = Ng');
+  close(tr('H', 'G').N.eval(0), 26.667, 'Nh', 1e-4);
+  close(tr('C', 'B').Q.eval(0), -50, 'Q columna izquierda');
+  close(tr('B', 'D').Q.eval(0), 26.667, 'Qb der', 1e-4);
+  close(tr('F', 'E').Q.eval(0), -20, 'Qe');
+  close(tr('H', 'G').Q.eval(0), -20, 'Qh');
+  // Viga y columna derecha con el mismo signo que el TP
+  close(tr('B', 'D').M.eval(0), -26.667, 'Mb der', 1e-4);
+  close(tr('D', 'F').M.eval(2), 53.333, 'Mf izq', 1e-4);
+  close(tr('F', 'E').M.eval(0), 30, 'Mf sup');
+  close(tr('F', 'G').M.eval(0), 23.333, 'Mf der', 1e-4);
+  close(tr('F', 'G').M.eval(1), 50, 'Mg sup');
+  close(tr('H', 'G').M.eval(2.5), -50, 'Mg inf');
+  // Columna izquierda: el TP da −173,33 / −48,33 / −75 (recorrida de arriba hacia abajo);
+  // con el recorrido por defecto (de abajo hacia arriba) el signo es el opuesto.
+  close(Math.abs(tr('C', 'B').M.eval(0)), 173.333, '|Mc|', 1e-4);
+  close(Math.abs(tr('C', 'B').M.eval(2.5)), 48.333, '|Mb inf|', 1e-4);
+  close(Math.abs(tr('B', 'A').M.eval(0)), 75, '|Mb sup|');
+});

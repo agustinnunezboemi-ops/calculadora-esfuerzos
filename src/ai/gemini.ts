@@ -63,7 +63,12 @@ Formato:
   ${tipo === 'esfuerzos' ? '"hinges": [{"node": "C"}],\n  ' : ''}"loads": [ ... ],
   "notas": ["..."]
 }
-Apoyos: "fijo" = articulación fija (2 reacciones); "movil" = apoyo con rodillos (1 reacción), "angle" = ángulo del plano de apoyo (0 = apoyado sobre un plano horizontal, reacción vertical; 90 = contra una pared vertical, reacción horizontal).`;
+Apoyos: "fijo" = articulación fija (2 reacciones); "movil" = apoyo deslizante (1 reacción), "angle" = ángulo del plano de apoyo (0 = apoyado sobre un plano horizontal, reacción vertical; 90 = contra una pared vertical, reacción horizontal).
+Cómo reconocer los apoyos en la figura (mirá con atención lo que hay DEBAJO del triángulo):
+- Notación de la cátedra: triángulo SOLO (apoyado directamente, sin nada debajo, o sobre el suelo rayado) = "fijo"; triángulo con UNA RAYA o línea paralela separada debajo = "movil".
+- Notación de libros (Beer, Hibbeler): triángulo sobre círculos o rodillos = "movil"; triángulo sobre una base rayada sin rodillos = "fijo"; pasador en una pared = "fijo"; rodillos contra una pared = "movil" con angle 90.
+- Una pared o base con rayado donde la barra entra rígidamente = "empotramiento".
+Si dudás entre fijo y móvil, elegí según el símbolo y dejalo explicado en "notas" indicando qué viste debajo de cada triángulo.`;
   if (tipo === 'reticulado')
     return `${comunes}
 Es un RETICULADO: barras articuladas en los nodos y cargas solo en los nodos.
