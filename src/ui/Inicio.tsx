@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type Seccion = 'esfuerzos' | 'reticulados' | 'materiales';
+export type Seccion = 'esfuerzos' | 'reticulados' | 'materiales' | 'ayuda';
 
 interface Opcion {
   id: Seccion;
@@ -66,6 +66,7 @@ export function Inicio({ onOpen }: { onOpen: (s: Seccion) => void }) {
       <header className="inicio-cabecera">
         <h1>Calculadoras de Estática</h1>
         <p>Cátedra Estática 67.02, ITBA. Teoría, convenciones y nomenclatura de los módulos de la cátedra.</p>
+        <button className="inicio-ayuda" onClick={() => onOpen('ayuda')}>Cómo usar las calculadoras</button>
       </header>
       <ul className="inicio-lista">
         {OPCIONES.map((o) => {

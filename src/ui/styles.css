@@ -273,3 +273,15 @@ sub, sup { font-size: 0.72em; }
 
 .lamina .rt-corte polyline { fill: none; stroke: var(--tinta); stroke-width: 1.5; stroke-dasharray: 7 5; }
 .lamina .rt-corte text { font: 600 italic 15px 'Barlow Condensed', Barlow, sans-serif; fill: var(--tinta); }
+
+/* Manual */
+.ayuda-pagina { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; background: var(--papel-2); border-left: 1px solid var(--borde); border-right: 1px solid var(--borde); min-height: 100vh; }
+.ayuda-pagina h1 { font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 600; font-size: 38px; margin: 10px 0 8px; }
+.ayuda-pagina h2 { font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 600; font-size: 22px; margin: 26px 0 6px; border-bottom: 1px solid var(--borde); }
+.ayuda-pagina li { margin: 4px 0; max-width: 70ch; }
+.ayuda-pagina p { max-width: 70ch; }
+.ayuda-lead { color: var(--tinta-2); }
+.inicio-ayuda { margin-top: 12px; font-size: 14px; }
+.nav-sup { display: inline-flex; gap: 6px; margin-bottom: 6px; }
+.volver.enlace { display: inline-block; text-decoration: none; color: inherit; background: var(--papel-2); border: 1px solid var(--borde); border-radius: 4px; }
+@media print { .nav-sup { display: none; } }

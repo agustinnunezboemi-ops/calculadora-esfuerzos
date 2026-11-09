@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { Inicio, Seccion } from './Inicio.tsx';
 import { Reticulados } from './Reticulados.tsx';
+import { Ayuda } from './Ayuda.tsx';
 import './styles.css';
 
 /** Navegación por #hash: '' = menú de inicio, '#esfuerzos', '#reticulados'. */
@@ -21,6 +22,7 @@ function Root() {
   };
   if (seccion === 'esfuerzos') return <App onHome={() => ir(null)} />;
   if (seccion === 'reticulados') return <Reticulados onHome={() => ir(null)} />;
+  if (seccion === 'ayuda') return <Ayuda onHome={() => ir(null)} />;
   return <Inicio onOpen={ir} />;
 }
 

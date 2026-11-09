@@ -256,7 +256,7 @@ export function App({ onHome }: { onHome?: () => void }) {
     <div className="app">
       <header className="cabecera">
         <div className="titulo">
-          {onHome && <button className="volver" onClick={onHome}>← Inicio</button>}
+          {onHome && <span className="nav-sup"><button className="volver" onClick={onHome}>← Inicio</button> <a className="volver enlace" href="#ayuda">Cómo usar</a></span>}
           <h1>Esfuerzos característicos</h1>
           <p>Vigas y pórticos isostáticos según el método de la cátedra Estática 67.02, ITBA</p>
         </div>

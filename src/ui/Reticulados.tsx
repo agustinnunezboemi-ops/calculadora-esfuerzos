@@ -212,7 +212,7 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
     <div className="app">
       <header className="cabecera">
         <div className="titulo">
-          <button className="volver" onClick={onHome}>← Inicio</button>
+          <span className="nav-sup"><button className="volver" onClick={onHome}>← Inicio</button> <a className="volver enlace" href="#ayuda">Cómo usar</a></span>
           <h1>Reticulados</h1>
           <p>Fuerza en cada barra por los métodos de los nodos y de las secciones, como en el TP N°5</p>
         </div>
