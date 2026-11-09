@@ -375,7 +375,7 @@ export function App({ onHome }: { onHome?: () => void }) {
 
           <h2>Barras</h2>
           <table>
-            <thead><tr><th>Barra</th><th>Desde</th><th>Hasta</th><th title="Invertir el sentido de recorrido">Invertir</th><th /></tr></thead>
+            <thead><tr><th>Barra</th><th>Desde</th><th>Hasta</th><th title="Invierte el sistema de referencia particular (sentido de recorrido) de la barra">Invertir SRP</th><th /></tr></thead>
             <tbody>
               {model.bars.map((b, i) => (
                 <tr key={i}>

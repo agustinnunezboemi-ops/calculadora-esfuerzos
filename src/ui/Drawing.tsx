@@ -225,6 +225,9 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
         <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0 0L10 5L0 10z" className="punta" />
         </marker>
+        <marker id="srp-flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M0 0L10 5L0 10z" className="punta-srp" />
+        </marker>
         <marker id="flecha-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0 0L10 5L0 10z" className="punta-r" />
         </marker>
@@ -235,6 +238,24 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
         const a = T(b.P0), c = T(add(b.P0, scale(b.e, b.L)));
         return <line key={b.id} x1={a.x} y1={a.y} x2={c.x} y2={c.y} className={highlight === b.id ? 'barra hl' : 'barra'} onClick={() => !tool && onPick?.(b.id)} />;
       })}
+      {mode === 'estructura' && !tool && (() => {
+        // Símbolo del sistema de referencia particular (x′, y′) en el primer tramo de cada barra,
+        // como en las figuras de la cátedra: flecha larga = x′ (sentido de recorrido), corta = y′.
+        const vistos = new Set<string>();
+        return st.bars.map((b) => {
+          if (vistos.has(b.orig)) return null;
+          vistos.add(b.orig);
+          const e = D(b.e), n = D(b.n);
+          const o = add(T(add(b.P0, scale(b.e, Math.min(b.L * 0.25, 0.6 / Math.max(k / 100, 1e-9))))), scale(n, -16));
+          const xa = add(o, scale(e, 18)), ya = add(o, scale(n, 12));
+          return (
+            <g key={`srp-${b.id}`} className="srp" pointerEvents="none">
+              <line x1={o.x} y1={o.y} x2={xa.x} y2={xa.y} markerEnd="url(#srp-flecha)" />
+              <line x1={o.x} y1={o.y} x2={ya.x} y2={ya.y} markerEnd="url(#srp-flecha)" />
+            </g>
+          );
+        });
+      })()}
       {mode === 'estructura' && st.bars.map((b) => b.dist.map((d, i) => <Dist key={`${b.id}-${i}`} b={b} d={d} T={T} D={D} k={k} st={st} />))}
       {st.supports.map((s) => <Support key={s.node} s={s} p={T(st.node(s.node).p)} st={st} T={T} />)}
       {mode === 'estructura' && st.forces.map((f, i) => <Arrow key={i} p={T(st.node(f.node).p)} d={D(scale(f.F, 1 / Math.hypot(f.F.x, f.F.y)))} label={`${fmt(Math.hypot(f.F.x, f.F.y), 2)}`} />)}

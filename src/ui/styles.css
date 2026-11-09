@@ -303,3 +303,7 @@ sub, sup { font-size: 0.72em; }
 .panel-ia a { color: var(--pos); }
 @media (max-width: 760px) { .ia-grid { grid-template-columns: 1fr; } }
 @media print { .panel-ia { display: none; } }
+
+.lamina .srp line { stroke: #2b3c9e; stroke-width: 1.3; }
+.lamina .punta-srp { fill: #2b3c9e; }
+@media (prefers-color-scheme: dark) { .lamina .srp line { stroke: #8fa0ff; } .lamina .punta-srp { fill: #8fa0ff; } }

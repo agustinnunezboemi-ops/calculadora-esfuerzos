@@ -115,27 +115,32 @@ test('TP N°4 · 3c: viga con ménsulas (las cargas llegan con su cupla de trasl
   close(at(s, 'Q', 'E', 'der'), -800, 'Qe der');
 });
 
-test('TP N°4 · 5e: pórtico recorrido de A a J (columna derecha de arriba hacia abajo)', () => {
+test('TP N°4 · 5e: pórtico con el SRP de la figura (columnas recorridas hacia arriba)', () => {
+  // La figura del TP muestra en las dos columnas el símbolo x′ ↑, y′ ← (recorrido de abajo hacia arriba).
   const s = solved(caso('tp4-5e.json'));
   const tr = (a: string, b: string) => s.bars.find((r) => r.bar.from === a && r.bar.to === b)!;
   close(tr('A', 'B').N.eval(0), 1.458, 'Na = 1,46');
   close(tr('D', 'E').N.eval(0), -3, 'Nd der = −3');
-  close(tr('G', 'H').N.eval(0), 1.042, 'Ng abajo = 1,04');
+  close(tr('H', 'G').N.eval(0), 1.042, 'Ng abajo = 1,04');
   close(tr('B', 'C').Q.eval(0), -2, 'Qb der');
   close(tr('C', 'D').Q.eval(0), -3, 'Qc der');
   close(tr('D', 'E').Q.eval(0), -1.458, 'Qd der');
   close(tr('E', 'F').Q.eval(0), -1.958, 'Qe');
   close(tr('F', 'G').Q.eval(0), 1.042, 'Qf der');
-  close(tr('G', 'H').Q.eval(0), 3, 'Qg abajo');
-  close(tr('I', 'J').Q.eval(0), 2, 'Qj');
+  close(tr('H', 'G').Q.eval(0), 3, 'Qg abajo');
+  close(tr('J', 'I').Q.eval(0), 2, 'Qj');
   close(tr('C', 'D').M.eval(0), -0.668, 'Mc');
   close(tr('D', 'E').M.eval(0), -1.667, 'Md');
   close(tr('E', 'F').M.eval(0), -2.521, 'Me');
   close(tr('F', 'G').M.eval(0), -3.0105, 'Mf');
-  close(tr('G', 'H').M.eval(0), -2.75, 'Mg');
-  close(tr('H', 'I').M.eval(0), -2, 'Mh');
-  close(tr('I', 'J').M.eval(0), -1, 'Mi abajo (después de la cupla)');
-  close(tr('I', 'J').M.eval(tr('I', 'J').bar.L), 0, 'Mj');
+  close(tr('F', 'G').M.eval(0.25), -2.75, 'Mg en la viga');
+  // Columna derecha: el TP imprime −2,75 / −2 / −1,5 / −1 / 0. Con el SRP de su propia figura
+  // el nudo G solo cierra con +2,75 (la tracción de la fibra superior de la viga sigue por la
+  // fibra exterior de la columna): los signos del TP en esa columna serían una errata.
+  close(tr('H', 'G').M.eval(0.25), 2.75, 'Mg en la columna');
+  close(tr('I', 'H').M.eval(0.25), 2, 'Mh');
+  close(tr('J', 'I').M.eval(0.5), 1, 'Mi abajo de la cupla');
+  close(tr('J', 'I').M.eval(0), 0, 'Mj');
 });
 
 test('TP N°4 · 9d: dos chapas, N y Q iguales al TP; Mf igual en valor absoluto', () => {
@@ -155,8 +160,9 @@ test('TP N°4 · 9d: dos chapas, N y Q iguales al TP; Mf igual en valor absoluto
   close(tr('F', 'G').M.eval(0), 23.333, 'Mf der', 1e-4);
   close(tr('F', 'G').M.eval(1), 50, 'Mg sup');
   close(tr('H', 'G').M.eval(2.5), -50, 'Mg inf');
-  // Columna izquierda: el TP da −173,33 / −48,33 / −75 (recorrida de arriba hacia abajo);
-  // con el recorrido por defecto (de abajo hacia arriba) el signo es el opuesto.
+  // Columna izquierda: el TP da −173,33 / −48,33 / −75. La figura no tiene símbolos de SRP
+  // (vale el recorrido por defecto, de abajo hacia arriba) y con esos signos el nudo B no cierra:
+  // −(−48,33) + (−75) − 26,67 ≠ 0. Con los de la app sí: −48,33 + 75 − 26,67 = 0.
   close(Math.abs(tr('C', 'B').M.eval(0)), 173.333, '|Mc|', 1e-4);
   close(Math.abs(tr('C', 'B').M.eval(2.5)), 48.333, '|Mb inf|', 1e-4);
   close(Math.abs(tr('B', 'A').M.eval(0)), 75, '|Mb sup|');
