@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Model, LoadDef, SupportType } from '../engine/model.ts';
+import { Model, LoadDef, SupportType, Vec, add, scale, sub, norm } from '../engine/model.ts';
 import { analyze, Solution } from '../engine/analysis.ts';
 import { normalize, Structure } from '../engine/normalize.ts';
 import { buildSteps, Step, Block, fmt } from '../engine/steps.ts';
-import { Drawing } from './Drawing.tsx';
+import { Drawing, Hover, EditEvent } from './Drawing.tsx';
 import { NudoDiagram } from './Nudo.tsx';
-import { EXAMPLES, UNIT_SYSTEMS } from './examples.ts';
+import { EXAMPLES, UNIT_SYSTEMS, convertModel } from './examples.ts';
 
 const STORAGE = 'calculadora-esfuerzos:v1';
 
@@ -73,6 +73,22 @@ export function App() {
   const [dce, setDce] = useState(true);
   const [open, setOpen] = useState<Record<string, boolean>>({ isostatico: true });
   const [tab, setTab] = useState<'editor' | 'dibujo' | 'pasos'>('dibujo');
+  const [hover, setHover] = useState<Hover | null>(null);
+  const [tool, setTool] = useState<Tool | null>(null);
+  const [grid, setGrid] = useState(0.5);
+  const [pending, setPending] = useState<Vec | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (pending) setPending(null);
+        else setTool(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pending]);
   const fileRef = useRef<HTMLInputElement>(null);
   const units = UNIT_SYSTEMS.find((u) => u.id === unidadesId) ?? UNIT_SYSTEMS[0];
 
@@ -113,6 +129,93 @@ export function App() {
   const nextNode = () => {
     const used = new Set(nodeIds);
     return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !used.has(l)) ?? `N${nodeIds.length + 1}`;
+  };
+
+  /** Clic del editor gráfico sobre la estructura. */
+  const onEdit = (ev: EditEvent) => {
+    if (!tool || !st) return;
+    const sbar = ev.bar ? st.bars.find((b) => b.id === ev.bar!.id) : null;
+    // Ubicación sobre la barra original del modelo: distancia desde su nodo `from`.
+    const onModelBar = () => {
+      if (!sbar) return null;
+      const mb = model.bars.find((b) => b.id === sbar.orig);
+      const from = mb && model.nodes.find((n) => n.id === mb.from);
+      if (!mb || !from) return null;
+      return { bar: mb.id, at: +norm(sub(ev.p, { x: from.x, y: from.y })).toFixed(6) };
+    };
+    set((m) => {
+      const used = new Set(m.nodes.map((n) => n.id));
+      const nodeAt = (p: Vec): string => {
+        const ex = m.nodes.find((n) => Math.abs(n.x - p.x) < 1e-6 && Math.abs(n.y - p.y) < 1e-6);
+        if (ex) return ex.id;
+        const id = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').find((l) => !used.has(l)) ?? `N${m.nodes.length + 1}`;
+        used.add(id);
+        m.nodes.push({ id, x: +p.x.toFixed(6), y: +p.y.toFixed(6) });
+        return id;
+      };
+      // Los nodos detectados automáticamente (cruces, cargas) se agregan al modelo al usarlos.
+      const nodeFor = () => (ev.node && m.nodes.some((n) => n.id === ev.node) ? ev.node : nodeAt(ev.p));
+      switch (tool) {
+        case 'barra': {
+          if (!pending) return void setPending(ev.p);
+          if (norm(sub(pending, ev.p)) < 1e-9) return void setPending(null);
+          const a = nodeAt(pending), b = nodeAt(ev.p);
+          let id = `${a}${b}`;
+          while (m.bars.some((x) => x.id === id)) id += "'";
+          m.bars.push({ id, from: a, to: b });
+          setPending(ev.p);
+          return;
+        }
+        case 'movil':
+        case 'fijo':
+        case 'empotramiento': {
+          const n = nodeFor();
+          m.supports = m.supports.filter((x) => x.node !== n);
+          m.supports.push({ node: n, type: tool });
+          return;
+        }
+        case 'articulacion': {
+          const n = nodeFor();
+          const had = (m.hinges ?? []).some((h) => h.node === n);
+          m.hinges = (m.hinges ?? []).filter((h) => h.node !== n);
+          if (!had) m.hinges.push({ node: n });
+          return;
+        }
+        case 'puntual':
+        case 'cupla': {
+          const ob = ev.node ? null : onModelBar();
+          const where = ob ?? { node: nodeFor() };
+          m.loads.push(tool === 'puntual' ? { type: 'puntual', ...where, value: 10, angle: -90 } : { type: 'cupla', ...where, value: 10 });
+          setAviso('Carga agregada: editá su valor y dirección en la pestaña Datos o en la lista de cargas.');
+          return;
+        }
+        case 'distribuida': {
+          if (!sbar) return void setAviso('Hacé clic sobre una barra para cargarla.');
+          const mb = m.bars.find((b) => b.id === sbar.orig)!;
+          const from = m.nodes.find((n) => n.id === mb.from)!;
+          const P0 = sbar.P0, P1 = add(sbar.P0, scale(sbar.e, sbar.L));
+          const d0 = norm(sub(P0, { x: from.x, y: from.y })), d1 = norm(sub(P1, { x: from.x, y: from.y }));
+          m.loads.push({ type: 'distribuida', bar: mb.id, from: +Math.min(d0, d1).toFixed(6), to: +Math.max(d0, d1).toFixed(6), q1: 5, q2: 5 });
+          setAviso(`Carga distribuida agregada en el tramo ${sbar.from}${sbar.to}: editá q en la lista de cargas.`);
+          return;
+        }
+        case 'borrar': {
+          if (ev.node && m.nodes.some((n) => n.id === ev.node)) {
+            const id = ev.node;
+            m.nodes = m.nodes.filter((n) => n.id !== id);
+            m.bars = m.bars.filter((b) => b.from !== id && b.to !== id);
+            m.supports = m.supports.filter((x) => x.node !== id);
+            m.hinges = (m.hinges ?? []).filter((h) => h.node !== id);
+            m.loads = m.loads.filter((l) => !('node' in l) || l.node !== id);
+          } else if (sbar) {
+            m.bars = m.bars.filter((b) => b.id !== sbar.orig);
+            m.loads = m.loads.filter((l) => !('bar' in l) || l.bar !== sbar.orig);
+          }
+          m.loads = m.loads.filter((l) => !('bar' in l) || m.bars.some((b) => b.id === l.bar));
+          return;
+        }
+      }
+    });
   };
 
   const exportJson = () => {
@@ -171,7 +274,12 @@ export function App() {
           </label>
           <label>
             Unidades
-            <select value={unidadesId} onChange={(e) => setUnidadesId(e.target.value)}>
+            <select value={unidadesId} onChange={(e) => {
+              const to = e.target.value;
+              setModel((m) => convertModel(m, unidadesId, to));
+              setAviso(`Valores convertidos de ${UNIT_SYSTEMS.find((u) => u.id === unidadesId)?.nombre} a ${UNIT_SYSTEMS.find((u) => u.id === to)?.nombre}.`);
+              setUnidadesId(to);
+            }}>
               {UNIT_SYSTEMS.map((u) => (
                 <option key={u.id} value={u.id}>{u.nombre}</option>
               ))}
@@ -300,13 +408,29 @@ export function App() {
                 <figcaption>Estructura {resuelto && dce ? 'y reacciones (DCE)' : '(DCL)'}</figcaption>
                 {resuelto && <label className="interruptor"><input type="checkbox" checked={dce} onChange={(e) => setDce(e.target.checked)} /> Mostrar reacciones</label>}
               </div>
-              <Drawing st={st} sol={sol} mode="estructura" showReactions={dce} highlight={highlight} onPick={setHighlight} unidades={units} />
+              <Herramientas tool={tool} setTool={(t) => { setTool(t); setPending(null); }} grid={grid} setGrid={setGrid} unidad={units.longitud} />
+              {aviso && <p className="aviso" role="status">{aviso} <button className="quitar" aria-label="Cerrar aviso" onClick={() => setAviso(null)}>×</button></p>}
+              <Drawing st={st} sol={sol} mode="estructura" showReactions={dce && !tool} highlight={highlight} onPick={setHighlight} unidades={units} hover={hover} onHover={setHover} tool={tool} grid={grid} onEdit={onEdit} pending={pending} />
             </figure>
+          )}
+          {resuelto && (
+            <p className="lectura" aria-live="polite">
+              {(() => {
+                const r = hover && sol!.bars.find((b) => b.bar.id === hover.bar);
+                if (!r || !hover) return 'Pasá el mouse sobre una barra para ver N, Q y Mf en esa sección.';
+                const L = units.longitud;
+                return (
+                  <>
+                    Tramo {r.bar.from}{r.bar.to}, a {fmt(hover.x)} {L} de {r.bar.from}: <b>N = {fmt(r.N.eval(hover.x))}</b> {units.fuerza} · <b>Q = {fmt(r.Q.eval(hover.x))}</b> {units.fuerza} · <b>Mf = {fmt(r.M.eval(hover.x))}</b> {units.fuerza}·{L}
+                  </>
+                );
+              })()}
+            </p>
           )}
           {resuelto && st && (['N', 'Q', 'M'] as const).map((k) => (
             <figure key={k}>
               <figcaption>{k === 'N' ? 'Esfuerzo normal N' : k === 'Q' ? 'Esfuerzo de corte Q' : 'Momento flector Mf'}</figcaption>
-              <Drawing st={st} sol={sol} mode={k} highlight={highlight} onPick={(b) => { setHighlight(b); }} unidades={units} />
+              <Drawing st={st} sol={sol} mode={k} highlight={highlight} onPick={(b) => { setHighlight(b); }} unidades={units} hover={hover} onHover={setHover} />
             </figure>
           ))}
           {resuelto && (
@@ -404,6 +528,45 @@ function LoadRow({ l, nodeIds, barIds, units, onChange, onRemove }: { l: LoadDef
         </>
       )}
       <button className="quitar" aria-label="Quitar carga" onClick={onRemove}>×</button>
+    </div>
+  );
+}
+
+type Tool = 'barra' | 'movil' | 'fijo' | 'empotramiento' | 'articulacion' | 'puntual' | 'cupla' | 'distribuida' | 'borrar';
+
+const TOOLS: { id: Tool; nombre: string; ayuda: string }[] = [
+  { id: 'barra', nombre: 'Barra', ayuda: 'Clic en el inicio y clic en el fin; sigue desde el último punto. Esc termina.' },
+  { id: 'movil', nombre: 'Apoyo móvil', ayuda: 'Clic en un nodo o sobre una barra.' },
+  { id: 'fijo', nombre: 'Apoyo fijo', ayuda: 'Clic en un nodo o sobre una barra.' },
+  { id: 'empotramiento', nombre: 'Empotramiento', ayuda: 'Clic en el extremo de una barra.' },
+  { id: 'articulacion', nombre: 'Articulación', ayuda: 'Clic en un nodo para ponerla o quitarla.' },
+  { id: 'puntual', nombre: 'Carga puntual', ayuda: 'Clic en un nodo o sobre una barra; después editá el valor.' },
+  { id: 'cupla', nombre: 'Cupla', ayuda: 'Clic en un nodo o sobre una barra; después editá el valor.' },
+  { id: 'distribuida', nombre: 'Distribuida', ayuda: 'Clic sobre un tramo de barra; después editá q.' },
+  { id: 'borrar', nombre: 'Borrar', ayuda: 'Clic en un nodo (borra sus barras y cargas) o en una barra.' },
+];
+
+function Herramientas({ tool, setTool, grid, setGrid, unidad }: { tool: Tool | null; setTool: (t: Tool | null) => void; grid: number; setGrid: (g: number) => void; unidad: string }) {
+  const actual = TOOLS.find((t) => t.id === tool);
+  return (
+    <div className="herramientas">
+      <div className="herr-botones" role="toolbar" aria-label="Editor gráfico">
+        <button className={!tool ? 'activa' : ''} onClick={() => setTool(null)} aria-pressed={!tool}>Ver</button>
+        {TOOLS.map((t) => (
+          <button key={t.id} className={tool === t.id ? 'activa' : ''} aria-pressed={tool === t.id} onClick={() => setTool(tool === t.id ? null : t.id)}>
+            {t.nombre}
+          </button>
+        ))}
+        <label className="herr-grilla">
+          Grilla
+          <select value={grid} onChange={(e) => setGrid(+e.target.value)}>
+            {[0.1, 0.25, 0.5, 1, 2, 5, 10].map((g) => (
+              <option key={g} value={g}>{String(g).replace('.', ',')} {unidad}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {actual && <p className="ayuda">{actual.ayuda}</p>}
     </div>
   );
 }

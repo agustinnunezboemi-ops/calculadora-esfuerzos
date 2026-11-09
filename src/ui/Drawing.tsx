@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Solution } from '../engine/analysis.ts';
 import { Structure } from '../engine/normalize.ts';
-import { Vec, vec, add, scale, sub, dirDeg, SupportDef } from '../engine/model.ts';
+import { Vec, vec, add, scale, sub, dot, norm, dirDeg, SupportDef } from '../engine/model.ts';
 import { reactionDir } from '../engine/analysis.ts';
 import { fmt } from '../engine/steps.ts';
 
 export type Mode = 'estructura' | 'N' | 'Q' | 'M';
+
+/** Sección bajo el cursor: tramo y distancia desde su inicio. */
+export interface Hover {
+  bar: string;
+  x: number;
+}
+
+/** Clic del editor gráfico, en coordenadas del mundo (ya ajustadas a la grilla). */
+export interface EditEvent {
+  p: Vec;
+  node: string | null;
+  /** Tramo bajo el cursor y distancia desde su inicio. */
+  bar: { id: string; x: number } | null;
+}
 
 interface Props {
   st: Structure;
@@ -16,14 +30,29 @@ interface Props {
   showReactions?: boolean;
   maxHeight?: number;
   unidades: { fuerza: string; longitud: string };
+  hover?: Hover | null;
+  onHover?: (h: Hover | null) => void;
+  /** Herramienta activa del editor; null = solo lectura. */
+  tool?: string | null;
+  grid?: number;
+  onEdit?: (e: EditEvent) => void;
+  /** Primer punto de una barra en construcción. */
+  pending?: Vec | null;
 }
 
 const W = 760;
 
-export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHeight = 620, unidades }: Props) {
+export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHeight = 620, unidades, hover, onHover, tool, grid = 0.5, onEdit, pending }: Props) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [mouse, setMouse] = useState<Vec | null>(null);
   const xs = st.nodes.map((n) => n.p.x);
   const ys = st.nodes.map((n) => n.p.y);
-  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  let minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  if (tool) {
+    // Al editar se aleja la vista para dejar grilla libre alrededor de la estructura.
+    const ext = Math.max(maxX - minX, maxY - minY, 4 * grid) * 0.35;
+    minX -= ext; maxX += ext; minY -= ext; maxY += ext;
+  }
   const spanX = Math.max(maxX - minX, 1e-6), spanY = Math.max(maxY - minY, 1e-6);
   // Misma escala y posición en la estructura y en los tres diagramas: el margen
   // reserva lugar para el diagrama, y la altura se adapta a la proporción de la estructura.
@@ -38,6 +67,73 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
   const ox = W / 2 - ((minX + maxX) / 2) * k;
   const oy = height / 2 + ((minY + maxY) / 2) * k;
   const T = (p: Vec) => vec(ox + p.x * k, oy - p.y * k);
+  const toWorld = (q: Vec) => vec((q.x - ox) / k, (oy - q.y) / k);
+
+  // ---- interacción: sección bajo el cursor y editor ----
+  const svgPoint = (ev: React.PointerEvent | React.MouseEvent): Vec | null => {
+    const svg = svgRef.current;
+    const m = svg?.getScreenCTM();
+    if (!svg || !m) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = ev.clientX;
+    pt.y = ev.clientY;
+    const r = pt.matrixTransform(m.inverse());
+    return vec(r.x, r.y);
+  };
+  const nearestBar = (q: Vec, tol = 18) => {
+    let best: { id: string; x: number; d: number } | null = null;
+    for (const b of st.bars) {
+      const a = T(b.P0);
+      const u = vec(b.e.x, -b.e.y);
+      const len = b.L * k;
+      const t = Math.max(0, Math.min(len, dot(sub(q, a), u)));
+      const d = norm(sub(q, add(a, scale(u, t))));
+      if (d <= tol && (!best || d < best.d)) best = { id: b.id, x: t / k, d };
+    }
+    return best;
+  };
+  const nearestNode = (q: Vec, tol = 14) => {
+    let best: { id: string; d: number } | null = null;
+    for (const n of st.nodes) {
+      const d = norm(sub(q, T(n.p)));
+      if (d <= tol && (!best || d < best.d)) best = { id: n.id, d };
+    }
+    return best;
+  };
+  const snap = (q: Vec): Vec => {
+    const nn = nearestNode(q);
+    if (nn) return st.node(nn.id).p;
+    const w = toWorld(q);
+    const r = (v: number) => +(Math.round(v / grid) * grid).toFixed(6);
+    return vec(r(w.x), r(w.y));
+  };
+  const onMove = (ev: React.PointerEvent) => {
+    const q = svgPoint(ev);
+    if (!q) return;
+    if (tool) {
+      setMouse(snap(q));
+      return;
+    }
+    const nb = nearestBar(q, mode === 'estructura' ? 18 : 120);
+    onHover?.(nb ? { bar: nb.id, x: nb.x } : null);
+  };
+  const onClickSvg = (ev: React.MouseEvent) => {
+    if (!tool || !onEdit) return;
+    const q = svgPoint(ev);
+    if (!q) return;
+    const nn = nearestNode(q);
+    const nb = nn ? null : nearestBar(q, 12);
+    let p = snap(q);
+    // Sobre una barra, el punto se proyecta sobre ella (con la distancia redondeada a la grilla).
+    let bar: EditEvent['bar'] = null;
+    if (nb) {
+      const b = st.bars.find((x) => x.id === nb.id)!;
+      const xr = Math.max(0, Math.min(b.L, Math.round(nb.x / grid) * grid));
+      p = add(b.P0, scale(b.e, xr));
+      bar = { id: b.id, x: xr };
+    }
+    onEdit({ p, node: nn?.id ?? null, bar });
+  };
   /** Dirección del mundo → pantalla (y invertida). */
   const D = (d: Vec) => vec(d.x, -d.y);
 
@@ -90,7 +186,7 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
       const mid = Math.abs(vm) > 1e-9 ? add(axis(xm), scale(n, vm * s * 0.5)) : null;
       const hl = highlight === b.id;
       return (
-        <g key={b.id} className={hl ? 'tramo hl' : 'tramo'} onClick={() => onPick?.(b.id)}>
+        <g key={b.id} className={hl ? 'tramo hl' : 'tramo'} onClick={() => !tool && onPick?.(b.id)}>
           <polygon points={poly.map((p) => `${p.x},${p.y}`).join(' ')} className={`area ${key}`} />
           {hatch}
           <polyline points={pts.map(([x, v]) => off(x, v)).map((p) => `${p.x},${p.y}`).join(' ')} className="curva" />
@@ -107,7 +203,17 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
   }
 
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} className="lamina" role="img" aria-label={mode === 'estructura' ? 'Estructura con vínculos y cargas' : `Diagrama de ${mode === 'M' ? 'momento flector' : mode === 'Q' ? 'esfuerzo de corte' : 'esfuerzo normal'}`}>
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${W} ${height}`}
+      className={tool ? 'lamina editando' : 'lamina'}
+      onPointerMove={onMove}
+      onPointerLeave={() => {
+        setMouse(null);
+        onHover?.(null);
+      }}
+      onClick={onClickSvg}
+      role="img" aria-label={mode === 'estructura' ? 'Estructura con vínculos y cargas' : `Diagrama de ${mode === 'M' ? 'momento flector' : mode === 'Q' ? 'esfuerzo de corte' : 'esfuerzo normal'}`}>
       <defs>
         <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0 0L10 5L0 10z" className="punta" />
@@ -116,10 +222,11 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
           <path d="M0 0L10 5L0 10z" className="punta-r" />
         </marker>
       </defs>
+      {tool && mode === 'estructura' && <Grid toWorld={toWorld} T={T} height={height} grid={grid} />}
       {diagram}
       {st.bars.map((b) => {
         const a = T(b.P0), c = T(add(b.P0, scale(b.e, b.L)));
-        return <line key={b.id} x1={a.x} y1={a.y} x2={c.x} y2={c.y} className={highlight === b.id ? 'barra hl' : 'barra'} onClick={() => onPick?.(b.id)} />;
+        return <line key={b.id} x1={a.x} y1={a.y} x2={c.x} y2={c.y} className={highlight === b.id ? 'barra hl' : 'barra'} onClick={() => !tool && onPick?.(b.id)} />;
       })}
       {mode === 'estructura' && st.bars.map((b) => b.dist.map((d, i) => <Dist key={`${b.id}-${i}`} b={b} d={d} T={T} D={D} k={k} st={st} />))}
       {st.supports.map((s) => <Support key={s.node} s={s} p={T(st.node(s.node).p)} st={st} T={T} />)}
@@ -143,6 +250,45 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
           </text>
         );
       })}
+      {hover && !tool && (() => {
+        const b = st.bars.find((x) => x.id === hover.bar);
+        if (!b) return null;
+        const P = T(add(b.P0, scale(b.e, hover.x)));
+        const n = D(b.n);
+        const a = add(P, scale(n, 26)), c = sub(P, scale(n, 26));
+        const r = sol?.bars.find((x) => x.bar.id === b.id);
+        let val: React.ReactNode = null;
+        if (r && mode !== 'estructura') {
+          const v = r[mode].eval(hover.x);
+          const s2 = Math.max(1e-9, ...sol!.bars.flatMap((rr) => sample(rr[mode], rr.bar.L).map(([, w]) => Math.abs(w))));
+          const q = add(P, scale(n, (v * 80) / s2));
+          val = (
+            <g className="cursor-valor">
+              <circle cx={q.x} cy={q.y} r={4} />
+              <text x={q.x + 8} y={q.y - 8}>{fmt(v, 3)}</text>
+            </g>
+          );
+        }
+        return (
+          <g className="cursor-seccion" pointerEvents="none">
+            <line x1={a.x} y1={a.y} x2={c.x} y2={c.y} />
+            {val}
+          </g>
+        );
+      })()}
+      {tool && mouse && (() => {
+        const m = T(mouse);
+        return (
+          <g className="editor-guia" pointerEvents="none">
+            {pending && (() => {
+              const a = T(pending);
+              return <line x1={a.x} y1={a.y} x2={m.x} y2={m.y} className="barra-fantasma" />;
+            })()}
+            <circle cx={m.x} cy={m.y} r={5} />
+            <text x={m.x + 9} y={m.y + 18}>({fmt(mouse.x, 2)}; {fmt(mouse.y, 2)})</text>
+          </g>
+        );
+      })()}
       {mode !== 'estructura' && (
         <text x={14} y={22} className="eje">
           {mode === 'M' ? 'Mf' : mode} [{mode === 'M' ? `${unidades.fuerza}·${unidades.longitud}` : unidades.fuerza}]
@@ -150,6 +296,21 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
       )}
     </svg>
   );
+}
+
+function Grid({ toWorld, T, height, grid }: { toWorld: (q: Vec) => Vec; T: (p: Vec) => Vec; height: number; grid: number }) {
+  const a = toWorld(vec(0, height));
+  const b = toWorld(vec(W, 0));
+  const x0 = Math.ceil(a.x / grid), x1 = Math.floor(b.x / grid);
+  const y0 = Math.ceil(a.y / grid), y1 = Math.floor(b.y / grid);
+  if ((x1 - x0 + 1) * (y1 - y0 + 1) > 4000) return null;
+  const pts: React.ReactNode[] = [];
+  for (let i = x0; i <= x1; i++)
+    for (let j = y0; j <= y1; j++) {
+      const p = T(vec(i * grid, j * grid));
+      pts.push(<circle key={`${i}-${j}`} cx={p.x} cy={p.y} r={i === 0 && j === 0 ? 2.6 : 1.3} />);
+    }
+  return <g className="grilla" pointerEvents="none">{pts}</g>;
 }
 
 function sample(p: { eval: (x: number) => number }, L: number): [number, number][] {

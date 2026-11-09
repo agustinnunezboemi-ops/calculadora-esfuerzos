@@ -119,3 +119,30 @@ export const UNIT_SYSTEMS: { id: string; nombre: string; fuerza: string; longitu
   { id: 'lb-in', nombre: 'Inglés · lb e in', fuerza: 'lb', longitud: 'in' },
   { id: 'lb-ft', nombre: 'Inglés · lb y ft', fuerza: 'lb', longitud: 'ft' },
 ];
+
+/** Factores a SI (N y m) de cada sistema. */
+const FACTORES: Record<string, { F: number; L: number }> = {
+  'kN-m': { F: 1000, L: 1 },
+  'N-m': { F: 1, L: 1 },
+  'kip-ft': { F: 4448.2216152605, L: 0.3048 },
+  'lb-in': { F: 4.4482216152605, L: 0.0254 },
+  'lb-ft': { F: 4.4482216152605, L: 0.3048 },
+};
+
+const r6 = (v: number) => +v.toPrecision(9); // 9 cifras: ida y vuelta sin pérdida visible
+
+/** Convierte todos los valores del modelo de un sistema de unidades a otro. */
+export function convertModel(m: Model, from: string, to: string): Model {
+  const a = FACTORES[from], b = FACTORES[to];
+  if (!a || !b || from === to) return m;
+  const fL = a.L / b.L, fF = a.F / b.F;
+  return {
+    ...m,
+    nodes: m.nodes.map((n) => ({ ...n, x: r6(n.x * fL), y: r6(n.y * fL) })),
+    loads: m.loads.map((l) => {
+      if (l.type === 'puntual') return { ...l, value: r6(l.value * fF), at: l.at === undefined ? undefined : r6(l.at * fL) };
+      if (l.type === 'cupla') return { ...l, value: r6(l.value * fF * fL), at: l.at === undefined ? undefined : r6(l.at * fL) };
+      return { ...l, from: r6(l.from * fL), to: r6(l.to * fL), q1: r6((l.q1 * fF) / fL), q2: r6((l.q2 * fF) / fL) };
+    }),
+  };
+}

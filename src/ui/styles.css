@@ -187,3 +187,23 @@ sub, sup { font-size: 0.72em; }
 @media (prefers-color-scheme: dark) {
   .nudo-dcl .corte line { stroke: #d9b65a; } .nudo-dcl .corte text { fill: #d9b65a; } .nudo-dcl .punta-corte { fill: #d9b65a; }
 }
+
+/* Cursor de sección (amarillo, como la sección del apunte) */
+.lamina .cursor-seccion line { stroke: var(--seccion); stroke-width: 4; stroke-linecap: round; }
+.lamina .cursor-valor circle { fill: var(--seccion); stroke: var(--tinta); stroke-width: 1; }
+.lamina .cursor-valor text { font: 600 14px 'Barlow Condensed', Barlow, sans-serif; fill: var(--tinta); paint-order: stroke; stroke: var(--papel-2); stroke-width: 3px; }
+.lectura { font-size: 14px; margin: 4px 0 10px; padding: 6px 10px; border-left: 4px solid var(--seccion); background: color-mix(in srgb, var(--seccion) 12%, transparent); min-height: 2.2em; }
+.lectura b { font-weight: 600; }
+
+/* Editor gráfico */
+.herramientas { margin: 6px 0; }
+.herr-botones { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.herr-botones button { font-size: 13px; padding: 4px 8px; }
+.herr-botones .activa { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.herr-grilla { display: flex; gap: 4px; align-items: center; font-size: 13px; color: var(--tinta-2); margin-left: auto; }
+.lamina.editando { cursor: crosshair; }
+.lamina .grilla circle { fill: var(--tinta-2); opacity: 0.45; }
+.lamina .editor-guia circle { fill: none; stroke: var(--pos); stroke-width: 2; }
+.lamina .editor-guia text { font: 500 12px 'Barlow Condensed', Barlow, sans-serif; fill: var(--pos); }
+.lamina .barra-fantasma { stroke: var(--pos); stroke-width: 3; stroke-dasharray: 6 5; }
+.aviso { font-size: 13px; background: color-mix(in srgb, var(--pos) 10%, transparent); border-left: 3px solid var(--pos); padding: 4px 8px; margin: 4px 0; }
