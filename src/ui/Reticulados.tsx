@@ -4,10 +4,11 @@ import { solveTruss, sectionMethod, TrussSolution, TrussError } from '../engine/
 import { buildTrussSteps, buildSectionSteps, estado } from '../engine/trussSteps.ts';
 import { Step, fmt } from '../engine/steps.ts';
 import { Structure } from '../engine/normalize.ts';
-import { BlockView, NumIn, limpiar } from './App.tsx';
+import { BlockView, NumIn, limpiar, PngBtn } from './App.tsx';
 import { Arrow, Support } from './Drawing.tsx';
 import { UNIT_SYSTEMS, convertModel } from './examples.ts';
 import { guardarJson } from './guardar.ts';
+import { imprimirInforme } from './exportar.ts';
 
 const STORAGE = 'calculadora-reticulados:v1';
 const bars = (...ids: string[]) => ids.map((id) => ({ id, from: id[0], to: id[1] }));
@@ -89,6 +90,7 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
   const [grid, setGrid] = useState(1);
   const [pending, setPending] = useState<string | null>(null);
   const [corte, setCorte] = useState<string[]>([]);
+  const [todo, setTodo] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({ rigidez: true });
   const [tab, setTab] = useState<'editor' | 'dibujo' | 'pasos'>('dibujo');
   const [aviso, setAviso] = useState<string | null>(null);
@@ -234,6 +236,7 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
           <button onClick={() => { setModel({ nodes: [], bars: [], supports: [], hinges: [], loads: [] }); setCorte([]); setTool('nodo'); }}>Nuevo</button>
           <button onClick={() => fileRef.current?.click()}>Abrir .json</button>
           <button onClick={exportJson}>Guardar .json</button>
+          <button onClick={() => imprimirInforme(setTodo)} title="Abre el diálogo de impresión: elegí «Guardar como PDF»">Informe PDF</button>
           <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ''; }} />
         </div>
       </header>
@@ -333,7 +336,10 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
             {actual && <p className="ayuda">{actual.ayuda}{tool === 'cortar' && corte.length ? ` Cortadas: ${corte.join(', ')}.` : ''}</p>}
           </div>
           {aviso && <p className="aviso" role="status">{aviso} <button className="quitar" aria-label="Cerrar aviso" onClick={() => setAviso(null)}>×</button></p>}
-          <TrussDrawing model={model} sol={sol} tool={tool} grid={grid} pending={pending} corte={corte} onEdit={onEdit} units={units} />
+          <figure>
+            <div className="fig-cabecera"><figcaption>Reticulado {ok ? 'y fuerzas en las barras' : ''}</figcaption><PngBtn nombre="reticulado" /></div>
+            <TrussDrawing model={model} sol={sol} tool={tool} grid={grid} pending={pending} corte={corte} onEdit={onEdit} units={units} />
+          </figure>
           {ok && sol && (
             <table className="resumen">
               <thead><tr><th>Barra</th><th>Fuerza</th><th>Estado</th></tr></thead>
@@ -346,7 +352,7 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
           <h2>Paso a paso</h2>
           {!steps.length && <p className="ayuda">Dibujá el reticulado para ver el desarrollo.</p>}
           {steps.map((s) => (
-            <details key={s.id} open={!!open[s.id]} onToggle={(e) => { const o = (e.target as HTMLDetailsElement).open; setOpen((x) => ({ ...x, [s.id]: o })); }} className="paso">
+            <details key={s.id} open={todo || !!open[s.id]} onToggle={(e) => { const o = (e.target as HTMLDetailsElement).open; setOpen((x) => ({ ...x, [s.id]: o })); }} className="paso">
               <summary>{s.titulo}</summary>
               {s.blocks.map((b, i) => <BlockView key={i} b={b} />)}
             </details>
@@ -455,6 +461,28 @@ function TrussDrawing({ model, sol, tool, grid, pending, corte, onEdit, units }:
           </g>
         );
       })}
+      {sol && corte.length >= 2 && (() => {
+        // Línea de corte n–n: pasa por el punto medio de las barras cortadas, como en el TP.
+        const mids = corte.map((id) => {
+          const i = sol.bars.findIndex((b) => b.id === id);
+          const b = model.bars[i];
+          return b ? scale(add(T(pos(b.from)), T(pos(b.to))), 0.5) : null;
+        }).filter((p): p is Vec => !!p);
+        if (mids.length < 2) return null;
+        const vert = Math.abs(mids[0].y - mids[mids.length - 1].y) >= Math.abs(mids[0].x - mids[mids.length - 1].x);
+        mids.sort((a, b) => (vert ? a.y - b.y : a.x - b.x));
+        const d0 = sub(mids[0], mids[1]), d1 = sub(mids[mids.length - 1], mids[mids.length - 2]);
+        const a = add(mids[0], scale(d0, 30 / Math.max(norm(d0), 1e-9)));
+        const z = add(mids[mids.length - 1], scale(d1, 30 / Math.max(norm(d1), 1e-9)));
+        const pts = [a, ...mids, z];
+        return (
+          <g className="rt-corte" pointerEvents="none">
+            <polyline points={pts.map((p) => `${p.x},${p.y}`).join(' ')} />
+            <text x={a.x + 6} y={a.y + (vert ? -4 : 14)}>n</text>
+            <text x={z.x + 6} y={z.y + (vert ? 14 : -4)}>n</text>
+          </g>
+        );
+      })()}
       {model.supports.map((s, i) => model.nodes.some((n) => n.id === s.node) && <Support key={i} s={s} p={T(pos(s.node))} st={st} T={T} />)}
       {model.loads.map((l, i) => {
         if (l.type !== 'puntual' || !l.node || !model.nodes.some((n) => n.id === l.node)) return null;

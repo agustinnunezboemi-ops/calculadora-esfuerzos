@@ -252,3 +252,24 @@ sub, sup { font-size: 0.72em; }
 .lamina .rt-nodo { fill: var(--papel-2); stroke: var(--tinta); stroke-width: 1.8; }
 .lamina .rt-nodo.activo { fill: var(--seccion); }
 .fuerza-celda { font-variant-numeric: tabular-nums; color: var(--tinta-2); white-space: nowrap; }
+
+.png { font-size: 12px; padding: 1px 7px; color: var(--tinta-2); }
+
+/* Informe impreso / PDF: dibujos y paso a paso completos, sin editor ni botones */
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff; font-size: 11pt; }
+  .acciones, .pestanas, .editor, .herramientas, .aviso, .volver, .png, .interruptor, .lectura, .quitar { display: none !important; }
+  .trabajo { display: block; }
+  .trabajo .panel { display: block !important; border: none; padding: 0; background: none; }
+  .trabajo .panel.editor { display: none !important; }
+  .pasos { position: static; max-height: none; overflow: visible; }
+  figure, .paso table, .nudo-dcl, .ecuacion { break-inside: avoid; }
+  .paso { break-inside: auto; }
+  .paso summary { list-style: none; font-size: 12.5pt; }
+  .cabecera { border-bottom: 1.5pt solid #000; }
+  .lamina { border-top: none; }
+}
+
+.lamina .rt-corte polyline { fill: none; stroke: var(--tinta); stroke-width: 1.5; stroke-dasharray: 7 5; }
+.lamina .rt-corte text { font: 600 italic 15px 'Barlow Condensed', Barlow, sans-serif; fill: var(--tinta); }

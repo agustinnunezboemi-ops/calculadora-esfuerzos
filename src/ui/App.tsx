@@ -6,6 +6,7 @@ import { buildSteps, Step, Block, fmt } from '../engine/steps.ts';
 import { Drawing, Hover, EditEvent } from './Drawing.tsx';
 import { NudoDiagram } from './Nudo.tsx';
 import { guardarJson } from './guardar.ts';
+import { svgToPng, imprimirInforme } from './exportar.ts';
 import { EXAMPLES, UNIT_SYSTEMS, convertModel } from './examples.ts';
 
 const STORAGE = 'calculadora-esfuerzos:v1';
@@ -72,6 +73,7 @@ export function App({ onHome }: { onHome?: () => void }) {
   const [unidadesId, setUnidadesId] = useState(initial.unidades);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [dce, setDce] = useState(true);
+  const [todo, setTodo] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({ isostatico: true });
   const [tab, setTab] = useState<'editor' | 'dibujo' | 'pasos'>('dibujo');
   const [hover, setHover] = useState<Hover | null>(null);
@@ -294,6 +296,7 @@ export function App({ onHome }: { onHome?: () => void }) {
           <button onClick={() => setModel({ nodes: [{ id: 'A', x: 0, y: 0 }, { id: 'B', x: 4, y: 0 }], bars: [{ id: 'AB', from: 'A', to: 'B' }], supports: [], hinges: [], loads: [] })}>Nuevo</button>
           <button onClick={() => fileRef.current?.click()}>Abrir .json</button>
           <button onClick={exportJson}>Guardar .json</button>
+          <button onClick={() => imprimirInforme(setTodo)} title="Abre el diálogo de impresión: elegí «Guardar como PDF»">Informe PDF</button>
           <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) importJson(f);
@@ -412,6 +415,7 @@ export function App({ onHome }: { onHome?: () => void }) {
             <figure>
               <div className="fig-cabecera">
                 <figcaption>Estructura {resuelto && dce ? 'y reacciones (DCE)' : '(DCL)'}</figcaption>
+                <PngBtn nombre="estructura" />
                 {resuelto && <label className="interruptor"><input type="checkbox" checked={dce} onChange={(e) => setDce(e.target.checked)} /> Mostrar reacciones</label>}
               </div>
               <Herramientas tool={tool} setTool={(t) => { setTool(t); setPending(null); }} grid={grid} setGrid={setGrid} unidad={units.longitud} />
@@ -435,7 +439,10 @@ export function App({ onHome }: { onHome?: () => void }) {
           )}
           {resuelto && st && (['N', 'Q', 'M'] as const).map((k) => (
             <figure key={k}>
-              <figcaption>{k === 'N' ? 'Esfuerzo normal N' : k === 'Q' ? 'Esfuerzo de corte Q' : 'Momento flector Mf'}</figcaption>
+              <div className="fig-cabecera">
+                <figcaption>{k === 'N' ? 'Esfuerzo normal N' : k === 'Q' ? 'Esfuerzo de corte Q' : 'Momento flector Mf'}</figcaption>
+                <PngBtn nombre={`diagrama-${k === 'M' ? 'Mf' : k}`} />
+              </div>
               <Drawing st={st} sol={sol} mode={k} highlight={highlight} onPick={(b) => { setHighlight(b); }} unidades={units} hover={hover} onHover={setHover} />
             </figure>
           ))}
@@ -456,7 +463,7 @@ export function App({ onHome }: { onHome?: () => void }) {
           <h2>Paso a paso</h2>
           {steps.length === 0 && <p className="ayuda">Completá la estructura para ver el desarrollo.</p>}
           {steps.map((s) => (
-            <details key={s.id} open={!!open[s.id] || (!!s.bar && s.bar === highlight)} onToggle={(e) => {
+            <details key={s.id} open={todo || !!open[s.id] || (!!s.bar && s.bar === highlight)} onToggle={(e) => {
               const isOpen = (e.target as HTMLDetailsElement).open;
               setOpen((o) => ({ ...o, [s.id]: isOpen }));
               if (isOpen && s.bar) setHighlight(s.bar);
@@ -584,4 +591,20 @@ export function limpiar(m: Model): Model {
   m.hinges = (m.hinges ?? []).filter((h) => ns.has(h.node));
   m.loads = m.loads.filter((l) => (l.type === 'distribuida' ? bs.has(l.bar) : l.bar !== undefined ? bs.has(l.bar) : l.node !== undefined && ns.has(l.node)));
   return m;
+}
+
+/** Botón que exporta a PNG el dibujo de la figura que lo contiene. */
+export function PngBtn({ nombre }: { nombre: string }) {
+  return (
+    <button
+      className="png"
+      title="Descargar como imagen PNG"
+      onClick={(e) => {
+        const svg = e.currentTarget.closest('figure')?.querySelector('svg.lamina') as SVGSVGElement | null;
+        if (svg) svgToPng(svg, nombre);
+      }}
+    >
+      PNG
+    </button>
+  );
 }

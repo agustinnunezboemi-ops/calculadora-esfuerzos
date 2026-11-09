@@ -30,7 +30,7 @@ export function NudoDiagram({ node, elems }: { node: string; elems: NudoElem[] }
       const lab = add(c, scale(u, stub + 16));
       parts.push(<text key={`n${i}`} x={lab.x} y={lab.y + 4} textAnchor="middle" className="nudo-nombre">{nm}</text>);
       // Esfuerzos aplicados en la mitad del tramo de barra, sobre el nudo.
-      const mid = add(c, scale(u, stub * 0.72));
+      const mid = add(c, scale(u, stub * 0.84));
       if (e.axial && norm(e.axial) > 1e-9) {
         const d = scale(e.axial, 1 / norm(e.axial));
         const from = add(mid, scale(scr(d), -17));
@@ -38,19 +38,19 @@ export function NudoDiagram({ node, elems }: { node: string; elems: NudoElem[] }
       }
       if (e.shear && norm(e.shear) > 1e-9) {
         const d = scale(e.shear, 1 / norm(e.shear));
-        const at = add(c, scale(u, stub * 0.42));
+        const at = add(c, scale(u, stub * 0.58));
         const from = add(at, scale(scr(d), -36));
         parts.push(arrow(from, d, 30, 'corte', `s${i}`, `Q ${fmt(Math.abs(e.esf.Q), 2)}`, -1));
       }
       if (Math.abs(e.M) > 1e-9) {
-        const p = add(c, scale(u, stub * 0.2));
-        const r = 12;
+        const p = add(c, scale(u, stub * 0.3));
+        const r = 11;
         const ccw = e.M > 0;
         const a0 = ccw ? -0.3 * Math.PI : 1.3 * Math.PI;
         const a1 = ccw ? 1.3 * Math.PI : -0.3 * Math.PI;
         const P = (a: number) => vec(p.x + r * Math.cos(a), p.y - r * Math.sin(a));
         const s0 = P(a0), s1 = P(a1);
-        const off = add(scale(vec(-u.y, u.x), -24), scale(u, 4));
+        const off = scale(vec(-u.y, u.x), 26);
         parts.push(
           <g key={`m${i}`} className="momento">
             <path d={`M${s0.x} ${s0.y} A${r} ${r} 0 1 ${ccw ? 0 : 1} ${s1.x} ${s1.y}`} fill="none" markerEnd="url(#nudo-momento)" />

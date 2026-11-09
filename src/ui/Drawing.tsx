@@ -186,7 +186,11 @@ export function Drawing({ st, sol, mode, highlight, onPick, showReactions, maxHe
         if (Math.abs(d) <= 1e-9 * maxAbs && Math.abs(p[0] - b.L / 2) < Math.abs(a[0] - b.L / 2)) return p;
         return a;
       }, [0, 0] as [number, number]);
-      const mid = Math.abs(vm) > 1e-9 ? add(axis(xm), scale(n, vm * s * 0.5)) : null;
+      // El signo se ubica dentro del tramo (no sobre un nudo, donde puede tapar otra barra).
+      const xs2 = Math.min(Math.max(xm, 0.25 * b.L), 0.75 * b.L);
+      const vs2 = Math.abs(r[key].eval(xs2)) > 1e-9 && Math.sign(r[key].eval(xs2)) === Math.sign(vm) ? r[key].eval(xs2) : vm;
+      const xsg = vs2 === vm ? xm : xs2;
+      const mid = Math.abs(vm) > 1e-9 ? add(axis(xsg), scale(n, vs2 * s * 0.5)) : null;
       const hl = highlight === b.id;
       return (
         <g key={b.id} className={hl ? 'tramo hl' : 'tramo'} onClick={() => !tool && onPick?.(b.id)}>
