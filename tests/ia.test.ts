@@ -53,3 +53,11 @@ test('en reticulados se descartan cargas distribuidas y empotramientos', () => {
   assert.equal(p.model.supports.length, 1);
   assert.equal(p.model.loads.length, 1);
 });
+
+test('elegir un modelo vigente de la lista de Google', async () => {
+  const { elegirModelo, listarModelos } = await import('../src/ai/gemini.ts');
+  assert.equal(elegirModelo(['models/gemini-2.0-flash', 'models/gemini-3.0-flash', 'models/gemini-3.0-flash-lite', 'models/gemini-3.1-flash-preview', 'models/gemini-3.0-pro']), 'gemini-3.0-flash');
+  assert.equal(elegirModelo(['gemini-3.5-pro']), 'gemini-3.5-pro');
+  const f = (async () => new Response(JSON.stringify({ models: [{ name: 'models/gemini-9-flash', supportedGenerationMethods: ['generateContent'] }, { name: 'models/text-embedding', supportedGenerationMethods: ['embedContent'] }] }), { status: 200 })) as unknown as typeof fetch;
+  assert.deepEqual(await listarModelos('x', f), ['gemini-9-flash']);
+});

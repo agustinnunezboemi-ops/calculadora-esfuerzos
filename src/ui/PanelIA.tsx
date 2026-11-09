@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Gemini, MODELO_POR_DEFECTO, Propuesta, Tipo } from '../ai/gemini.ts';
+import { Gemini, MODELO_POR_DEFECTO, Propuesta, Tipo, listarModelos, elegirModelo, ModeloNoDisponible } from '../ai/gemini.ts';
 
 const CLAVE = 'ia:gemini';
 
@@ -37,6 +37,14 @@ export function PanelIA({ tipo, onPropuesta, onCerrar }: { tipo: Tipo; onPropues
   const [texto, setTexto] = useState('');
   const [imagen, setImagen] = useState<{ mime: string; base64: string; url: string } | null>(null);
   const [estado, setEstado] = useState<{ tipo: 'idle' | 'trabajando' | 'error'; msg?: string }>({ tipo: 'idle' });
+  const [modelos, setModelos] = useState<string[]>([]);
+  const [info, setInfo] = useState<string | null>(null);
+
+  const buscarModelos = async () => {
+    const lista = await listarModelos(cfg.clave);
+    setModelos(lista);
+    return lista;
+  };
 
   useEffect(() => {
     try {
@@ -59,8 +67,20 @@ export function PanelIA({ tipo, onPropuesta, onCerrar }: { tipo: Tipo; onPropues
 
   const interpretar = async () => {
     setEstado({ tipo: 'trabajando' });
+    const entrada = { tipo, texto, imagen: imagen ?? undefined };
     try {
-      const p = await new Gemini(cfg).interpretar({ tipo, texto, imagen: imagen ?? undefined });
+      let p;
+      try {
+        p = await new Gemini(cfg).interpretar(entrada);
+      } catch (e) {
+        if (!(e instanceof ModeloNoDisponible)) throw e;
+        // El modelo ya no existe: se pregunta a Google cuáles hay y se elige uno vigente.
+        const elegido = elegirModelo(await buscarModelos());
+        if (!elegido) throw new Error('Tu clave no tiene modelos de Gemini disponibles para leer imágenes.');
+        setCfg((c) => ({ ...c, modelo: elegido }));
+        setInfo(`El modelo anterior ya no existe; se usó ${elegido}.`);
+        p = await new Gemini({ ...cfg, modelo: elegido }).interpretar(entrada);
+      }
       setEstado({ tipo: 'idle' });
       onPropuesta(p);
     } catch (e) {
@@ -108,8 +128,11 @@ export function PanelIA({ tipo, onPropuesta, onCerrar }: { tipo: Tipo; onPropues
           <label className="interruptor"><input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} /> Recordar la clave en este navegador</label>
           <label>
             Modelo
-            <input value={cfg.modelo} onChange={(e) => setCfg({ ...cfg, modelo: e.target.value.trim() })} />
+            <input list="ia-modelos" value={cfg.modelo} onChange={(e) => setCfg({ ...cfg, modelo: e.target.value.trim() })} />
+            <datalist id="ia-modelos">{modelos.map((m) => <option key={m} value={m} />)}</datalist>
           </label>
+          <button disabled={!cfg.clave} onClick={() => buscarModelos().then((l) => setInfo(`${l.length} modelos disponibles con tu clave; elegí uno en el campo Modelo.`)).catch((e) => setEstado({ tipo: 'error', msg: e.message }))}>Ver modelos disponibles</button>
+          {info && <p className="ayuda">{info}</p>}
           <p className="ayuda">
             La clave es gratuita: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">aistudio.google.com</a> → «Get API key». Se envía solo a Google y
             queda guardada únicamente en tu navegador.

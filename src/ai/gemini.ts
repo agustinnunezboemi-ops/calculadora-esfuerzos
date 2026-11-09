@@ -24,7 +24,26 @@ export interface Propuesta {
   notas: string[];
 }
 
-export const MODELO_POR_DEFECTO = 'gemini-2.5-flash';
+export const MODELO_POR_DEFECTO = 'gemini-flash-latest';
+
+/** Elige el mejor modelo para leer figuras: un "flash" estable de la versión más nueva. */
+export function elegirModelo(nombres: string[]): string | null {
+  const ok = nombres.map((n) => n.replace(/^models\//, '')).filter((n) => /gemini/.test(n) && /flash/.test(n) && !/(lite|image|tts|live|audio|embedding|thinking|exp)/.test(n));
+  if (!ok.length) return nombres.map((n) => n.replace(/^models\//, '')).find((n) => /gemini/.test(n)) ?? null;
+  const ver = (n: string) => +(n.match(/gemini-(\d+(?:\.\d+)?)/)?.[1] ?? 0);
+  const estable = (n: string) => (/preview/.test(n) ? 1 : 0);
+  return ok.sort((a, b) => estable(a) - estable(b) || ver(b) - ver(a) || a.length - b.length)[0];
+}
+
+/** Lista los modelos que la clave puede usar para generar contenido. */
+export async function listarModelos(clave: string, fetchImpl: typeof fetch = (...a) => fetch(...a)): Promise<string[]> {
+  const r = await fetchImpl('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': clave } });
+  if (!r.ok) throw new Error('No se pudo obtener la lista de modelos de Gemini.');
+  const j = (await r.json()) as { models?: { name: string; supportedGenerationMethods?: string[] }[] };
+  return (j.models ?? []).filter((m) => (m.supportedGenerationMethods ?? []).includes('generateContent')).map((m) => m.name.replace(/^models\//, ''));
+}
+
+export class ModeloNoDisponible extends Error {}
 
 /** Interfaz común para poder sumar otros proveedores sin tocar el resto de la app. */
 export interface ProveedorIA {
@@ -141,7 +160,7 @@ export class Gemini implements ProveedorIA {
       const msg = (body?.error as { message?: string } | undefined)?.message ?? `error ${r.status}`;
       if (r.status === 400 && /API key/i.test(msg)) throw new Error('La clave de Gemini no es válida.');
       if (r.status === 429) throw new Error('Se alcanzó el límite gratuito de Gemini por ahora. Probá en unos minutos.');
-      if (r.status === 404) throw new Error(`El modelo "${this.cfg.modelo}" no está disponible. Probá con otro en la configuración.`);
+      if (r.status === 404) throw new ModeloNoDisponible(`El modelo "${this.cfg.modelo}" no está disponible.`);
       throw new Error(`Gemini respondió con un error: ${msg}`);
     }
     const cand = (body?.candidates as { content?: { parts?: { text?: string }[] } }[] | undefined)?.[0];
