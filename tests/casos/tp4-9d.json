@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "tipo": "esfuerzos",
+  "unidades": "kN-m",
+  "nodes": [
+    {
+      "id": "C",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 0,
+      "y": 2.5
+    },
+    {
+      "id": "A",
+      "x": 0,
+      "y": 4
+    },
+    {
+      "id": "D",
+      "x": 1,
+      "y": 2.5
+    },
+    {
+      "id": "F",
+      "x": 3,
+      "y": 2.5
+    },
+    {
+      "id": "E",
+      "x": 3,
+      "y": 4
+    },
+    {
+      "id": "G",
+      "x": 4,
+      "y": 2.5
+    },
+    {
+      "id": "H",
+      "x": 4,
+      "y": 0
+    }
+  ],
+  "bars": [
+    {
+      "id": "CB",
+      "from": "C",
+      "to": "B"
+    },
+    {
+      "id": "BA",
+      "from": "B",
+      "to": "A"
+    },
+    {
+      "id": "BD",
+      "from": "B",
+      "to": "D"
+    },
+    {
+      "id": "DF",
+      "from": "D",
+      "to": "F"
+    },
+    {
+      "id": "FE",
+      "from": "F",
+      "to": "E"
+    },
+    {
+      "id": "FG",
+      "from": "F",
+      "to": "G"
+    },
+    {
+      "id": "GH",
+      "from": "G",
+      "to": "H"
+    }
+  ],
+  "supports": [
+    {
+      "node": "C",
+      "type": "empotramiento"
+    },
+    {
+      "node": "H",
+      "type": "movil"
+    }
+  ],
+  "hinges": [
+    {
+      "node": "D"
+    }
+  ],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "A",
+      "value": 50,
+      "angle": 180
+    },
+    {
+      "type": "puntual",
+      "node": "E",
+      "value": 20,
+      "angle": 180
+    },
+    {
+      "type": "puntual",
+      "node": "H",
+      "value": 20,
+      "angle": 0
+    }
+  ]
+}

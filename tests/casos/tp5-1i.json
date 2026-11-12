@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "tipo": "reticulado",
+  "unidades": "lb-ft",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 8,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 16,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 24,
+      "y": 0
+    },
+    {
+      "id": "E",
+      "x": 32,
+      "y": 0
+    },
+    {
+      "id": "F",
+      "x": 8,
+      "y": 6
+    },
+    {
+      "id": "G",
+      "x": 24,
+      "y": 6
+    },
+    {
+      "id": "H",
+      "x": 16,
+      "y": 8
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "BC",
+      "from": "B",
+      "to": "C"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "DE",
+      "from": "D",
+      "to": "E"
+    },
+    {
+      "id": "EG",
+      "from": "E",
+      "to": "G"
+    },
+    {
+      "id": "GH",
+      "from": "G",
+      "to": "H"
+    },
+    {
+      "id": "HF",
+      "from": "H",
+      "to": "F"
+    },
+    {
+      "id": "FA",
+      "from": "F",
+      "to": "A"
+    },
+    {
+      "id": "FB",
+      "from": "F",
+      "to": "B"
+    },
+    {
+      "id": "DG",
+      "from": "D",
+      "to": "G"
+    },
+    {
+      "id": "HC",
+      "from": "H",
+      "to": "C"
+    },
+    {
+      "id": "GC",
+      "from": "G",
+      "to": "C"
+    },
+    {
+      "id": "FC",
+      "from": "F",
+      "to": "C"
+    }
+  ],
+  "supports": [
+    {
+      "node": "A",
+      "type": "movil"
+    },
+    {
+      "node": "E",
+      "type": "fijo"
+    }
+  ],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "A",
+      "value": 300,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "F",
+      "value": 600,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "H",
+      "value": 600,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "G",
+      "value": 600,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "E",
+      "value": 300,
+      "angle": -90
+    }
+  ]
+}

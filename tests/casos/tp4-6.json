@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "unidades": "kN-m",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 2,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 4,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 2,
+      "y": 2
+    },
+    {
+      "id": "E",
+      "x": 0,
+      "y": 4
+    },
+    {
+      "id": "F",
+      "x": 2,
+      "y": 4
+    },
+    {
+      "id": "G",
+      "x": 4,
+      "y": 4
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "bC",
+      "from": "B",
+      "to": "C"
+    },
+    {
+      "id": "bd",
+      "from": "B",
+      "to": "D"
+    },
+    {
+      "id": "df",
+      "from": "D",
+      "to": "F"
+    },
+    {
+      "id": "ef",
+      "from": "E",
+      "to": "F"
+    },
+    {
+      "id": "AG5",
+      "from": "F",
+      "to": "G"
+    }
+  ],
+  "supports": [
+    {
+      "node": "E",
+      "type": "movil"
+    },
+    {
+      "node": "C",
+      "type": "fijo"
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "A",
+      "value": 6,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "G",
+      "value": 6,
+      "angle": -90
+    },
+    {
+      "type": "cupla",
+      "node": "D",
+      "value": -4
+    },
+    {
+      "type": "distribuida",
+      "bar": "ef",
+      "from": 0,
+      "to": 2,
+      "q1": 2,
+      "q2": 2
+    }
+  ]
+}
