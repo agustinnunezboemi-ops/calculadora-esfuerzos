@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "tipo": "reticulado",
+  "unidades": "kN-m",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 3.8,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 7,
+      "y": 2.4
+    },
+    {
+      "id": "E",
+      "x": 7,
+      "y": 0
+    },
+    {
+      "id": "G",
+      "x": 10.2,
+      "y": 0
+    },
+    {
+      "id": "H",
+      "x": 14,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 3.8,
+      "y": 1.302
+    },
+    {
+      "id": "F",
+      "x": 10.2,
+      "y": 1.302
+    }
+  ],
+  "bars": [
+    {
+      "id": "AC",
+      "from": "A",
+      "to": "C"
+    },
+    {
+      "id": "CE",
+      "from": "C",
+      "to": "E"
+    },
+    {
+      "id": "DE",
+      "from": "D",
+      "to": "E"
+    },
+    {
+      "id": "DG",
+      "from": "D",
+      "to": "G"
+    },
+    {
+      "id": "EG",
+      "from": "E",
+      "to": "G"
+    },
+    {
+      "id": "GH",
+      "from": "G",
+      "to": "H"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "BD",
+      "from": "B",
+      "to": "D"
+    },
+    {
+      "id": "DF",
+      "from": "D",
+      "to": "F"
+    },
+    {
+      "id": "FH",
+      "from": "F",
+      "to": "H"
+    },
+    {
+      "id": "FG",
+      "from": "F",
+      "to": "G"
+    },
+    {
+      "id": "BC",
+      "from": "B",
+      "to": "C"
+    }
+  ],
+  "supports": [
+    {
+      "node": "A",
+      "type": "fijo"
+    },
+    {
+      "node": "H",
+      "type": "movil",
+      "angle": 0
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "A",
+      "value": 5.7,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "D",
+      "value": 9.6,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "H",
+      "value": 5.7,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "B",
+      "value": 10.5,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "F",
+      "value": 10.5,
+      "angle": -90
+    }
+  ]
+}
