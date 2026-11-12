@@ -307,3 +307,10 @@ sub, sup { font-size: 0.72em; }
 .lamina .srp line { stroke: #2b3c9e; stroke-width: 1.3; }
 .lamina .punta-srp { fill: #2b3c9e; }
 @media (prefers-color-scheme: dark) { .lamina .srp line { stroke: #8fa0ff; } .lamina .punta-srp { fill: #8fa0ff; } }
+
+/* Nodo sobre recta */
+.nodo-recta { margin-top: 6px; display: grid; gap: 6px; }
+.nodo-recta-botones { display: flex; gap: 6px; flex-wrap: wrap; }
+.nodo-recta-form { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 14px; border-left: 3px solid var(--seccion); padding: 4px 0 4px 8px; }
+.nodo-recta-desarrollo { font-size: 13px; border-left: 3px solid var(--pos); padding: 2px 0 2px 8px; }
+.nodo-recta-desarrollo p { margin: 3px 0; }

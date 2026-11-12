@@ -4,6 +4,7 @@
  * La IA solo propone datos; el cálculo y el paso a paso los hace siempre el motor.
  */
 import { Model, LoadDef, SupportDef } from '../engine/model.ts';
+import { alinearNodos } from '../engine/geometria.ts';
 
 export type Tipo = 'esfuerzos' | 'reticulado';
 
@@ -52,7 +53,7 @@ export interface ProveedorIA {
 
 export function instrucciones(tipo: Tipo): string {
   const comunes = `Sos un asistente de la cátedra Estática 67.02 (ITBA). Tu tarea es leer el enunciado o la figura de un ejercicio y devolver SOLO un objeto JSON con la estructura, sin texto adicional.
-Convenciones: sistema de referencia global con x hacia la derecha e y hacia arriba; coordenadas de los nodos en las unidades del enunciado; ángulos en grados medidos desde el eje x, antihorario positivo (−90 = hacia abajo, 180 = hacia la izquierda).
+Convenciones: sistema de referencia global con x hacia la derecha e y hacia arriba; coordenadas de los nodos en las unidades del enunciado; si un nodo está a mitad de una barra inclinada y el enunciado sólo da su abscisa, calculá su ordenada por trigonometría con los nodos extremos de esa barra (tg θ = Δy/Δx; y = yP + (x − xP)·tg θ) y escribila con todos sus decimales, sin redondear; ángulos en grados medidos desde el eje x, antihorario positivo (−90 = hacia abajo, 180 = hacia la izquierda).
 Usá como id de los nodos las letras de la figura (A, B, C…). Si una cota no se ve, estimala y explicalo en "notas".
 Formato:
 {
@@ -137,7 +138,11 @@ export function validarPropuesta(j: unknown, tipo: Tipo): Propuesta {
   const descartados = (Array.isArray(o.loads) ? o.loads.length : 0) - loads.length + (Array.isArray(o.supports) ? o.supports.length : 0) - supports.length;
   if (descartados > 0) notas.push(`Se descartaron ${descartados} dato(s) que no se pudieron interpretar: revisá cargas y vínculos.`);
   const unidades = ['kN-m', 'N-m', 'kip-ft', 'lb-in', 'lb-ft'].includes(str(o.unidades)) ? str(o.unidades) : null;
-  return { model: { nodes, bars, supports, hinges, loads }, unidades, notas };
+  // Nodos intermedios de barras oblicuas: se ubican exactamente sobre la recta (θ = atan(Δy/Δx)).
+  const { model, cambios } = alinearNodos({ nodes, bars, supports, hinges, loads });
+  if (cambios.length)
+    notas.push(`Se ubicaron exactamente sobre su recta (θ = atan(Δy/Δx), y = y_P + (x − x_P)·tg θ): ${cambios.map((c) => `${c.node} sobre ${c.entre.join('–')} (y = ${+c.despues.y.toFixed(4)})`).join(', ')}.`);
+  return { model, unidades, notas };
 }
 
 export class Gemini implements ProveedorIA {

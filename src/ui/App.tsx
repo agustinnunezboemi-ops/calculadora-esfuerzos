@@ -5,6 +5,7 @@ import { normalize, Structure } from '../engine/normalize.ts';
 import { buildSteps, Step, Block, fmt } from '../engine/steps.ts';
 import { Drawing, Hover, EditEvent } from './Drawing.tsx';
 import { NudoDiagram } from './Nudo.tsx';
+import { NodoEnRecta } from './NodoEnRecta.tsx';
 import { guardarJson } from './guardar.ts';
 import { svgToPng, imprimirInforme } from './exportar.ts';
 import { PanelIA } from './PanelIA.tsx';
@@ -50,9 +51,12 @@ export function Math_({ text }: { text: string }) {
 }
 
 export function NumIn({ value, onChange, label, width = 64 }: { value: number; onChange: (v: number) => void; label: string; width?: number }) {
-  const [txt, setTxt] = useState(String(value).replace('.', ','));
+  // Se muestran hasta 6 decimales; el valor guardado conserva toda la precisión (p. ej. un nodo
+  // ubicado por trigonometría sobre una recta oblicua).
+  const ver = (v: number) => String(+v.toFixed(6)).replace('.', ',');
+  const [txt, setTxt] = useState(ver(value));
   useEffect(() => {
-    if (num(txt) !== value) setTxt(String(value).replace('.', ','));
+    if (Math.abs(num(txt) - value) > 1e-9) setTxt(ver(value));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
   return (
@@ -372,6 +376,7 @@ export function App({ onHome }: { onHome?: () => void }) {
             </tbody>
           </table>
           <button className="agregar" onClick={() => set((m) => { const last = m.nodes[m.nodes.length - 1]; m.nodes.push({ id: nextNode(), x: (last?.x ?? 0) + 2, y: last?.y ?? 0 }); })}>Agregar nodo</button>
+          <NodoEnRecta model={model} unidad={units.longitud} onModel={(m) => setModel(limpiar(m))} onAviso={setAviso} />
 
           <h2>Barras</h2>
           <table>

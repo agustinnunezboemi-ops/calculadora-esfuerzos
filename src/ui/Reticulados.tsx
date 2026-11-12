@@ -10,6 +10,9 @@ import { UNIT_SYSTEMS, convertModel } from './examples.ts';
 import { guardarJson } from './guardar.ts';
 import { imprimirInforme } from './exportar.ts';
 import { PanelIA } from './PanelIA.tsx';
+import { NodoEnRecta } from './NodoEnRecta.tsx';
+import { alinearNodos } from '../engine/geometria.ts';
+import tp5_1h from '../../tests/casos/tp5-1h.json';
 import type { Propuesta } from '../ai/gemini.ts';
 
 import tp5_1i from '../../tests/casos/tp5-1i.json';
@@ -62,6 +65,12 @@ const EJEMPLOS: { id: string; nombre: string; unidades: string; model: Model }[]
       supports: [{ node: 'D', type: 'movil' }, { node: 'F', type: 'fijo' }],
       loads: [P('A', 1), P('B', 4), P('C', 1), P('E', 2.4)],
     },
+  },
+  {
+    id: 'tp5-1h',
+    nombre: 'TP N°5 · 1h (cuerdas oblicuas)',
+    unidades: 'kN-m',
+    model: alinearNodos({ nodes: tp5_1h.nodes, bars: tp5_1h.bars, supports: tp5_1h.supports as Model['supports'], hinges: [], loads: tp5_1h.loads as Model['loads'] }).model,
   },
   {
     id: 'tp5-1i',
@@ -299,6 +308,7 @@ export function Reticulados({ onHome }: { onHome: () => void }) {
             </tbody>
           </table>
           <button className="agregar" onClick={() => set((m) => { const l = m.nodes[m.nodes.length - 1]; m.nodes.push({ id: newId(m), x: (l?.x ?? 0) + 2, y: l?.y ?? 0 }); })}>Agregar nodo</button>
+          <NodoEnRecta model={model} unidad={units.longitud} onModel={(m) => setModel(limpiar(m))} onAviso={setAviso} />
 
           <h2>Barras</h2>
           <table>
