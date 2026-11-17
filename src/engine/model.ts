@@ -32,6 +32,12 @@ export interface SupportDef {
 
 export interface HingeDef {
   node: string;
+  /**
+   * Barras (ids del modelo) que llegan articuladas al nodo. Las demás barras del nodo quedan
+   * unidas rígidamente entre sí (p. ej. una chapa en L que pasa continua por el pasador y una
+   * barra que se articula en él). Si se omite, todas las barras del nodo quedan articuladas.
+   */
+  bars?: string[];
 }
 
 /** Ubicación de una carga: en un nodo, o en una barra a una distancia `at` desde su nodo `from`. */

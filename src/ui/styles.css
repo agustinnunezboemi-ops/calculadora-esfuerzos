@@ -314,3 +314,7 @@ sub, sup { font-size: 0.72em; }
 .nodo-recta-form { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 14px; border-left: 3px solid var(--seccion); padding: 4px 0 4px 8px; }
 .nodo-recta-desarrollo { font-size: 13px; border-left: 3px solid var(--pos); padding: 2px 0 2px 8px; }
 .nodo-recta-desarrollo p { margin: 3px 0; }
+
+/* Articulación parcial (chapa que pasa continua por el pasador) */
+.art-parcial { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 14px; margin: 6px 0; border-left: 3px solid var(--seccion); padding: 4px 0 4px 8px; }
+.art-parcial small { flex-basis: 100%; opacity: .8; }

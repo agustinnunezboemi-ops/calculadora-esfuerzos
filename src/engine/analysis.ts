@@ -95,8 +95,12 @@ function chapasOf(st: Structure): number[] {
   const parent = st.bars.map((_, i) => i);
   const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
   for (const n of st.nodes) {
-    if (n.hinge) continue;
-    const inc = st.bars.map((b, i) => (b.from === n.id || b.to === n.id ? i : -1)).filter((i) => i >= 0);
+    let inc = st.bars.map((b, i) => (b.from === n.id || b.to === n.id ? i : -1)).filter((i) => i >= 0);
+    if (n.hinge) {
+      // Articulación parcial: las barras no articuladas siguen unidas rígidamente entre sí.
+      if (!n.released) continue;
+      inc = inc.filter((i) => !n.released!.has(st.bars[i].orig));
+    }
     for (let k = 1; k < inc.length; k++) parent[find(inc[k])] = find(inc[0]);
   }
   const roots = [...new Set(st.bars.map((_, i) => find(i)))];
@@ -235,6 +239,14 @@ export function analyze(model: Model): Solution {
   } else if (restricciones < gl) {
     status = 'hipostatico';
     motivo = `Hay menos condiciones de vínculo (${restricciones}) que grados de libertad (${gl}).`;
+    // Pista: una barra que pasa continua por una articulación suele ser una única chapa (L o T).
+    const pasantes = st.nodes.filter((n) => n.hinge && !n.released).flatMap((n) => {
+      const origs = st.bars.filter((b) => b.from === n.id || b.to === n.id).map((b) => b.orig);
+      const cont = [...new Set(origs.filter((o, i) => origs.indexOf(o) !== i))];
+      return cont.length && new Set(origs).size > cont.length ? [`en ${n.id} la barra ${cont.join(', ')} pasa continua`] : [];
+    });
+    if (pasantes.length)
+      motivo += ` Revisá las articulaciones: ${pasantes.join('; ')}. Si es una sola chapa que sigue por el pasador, marcá en «Art.» solo las barras que llegan articuladas.`;
   } else if (restricciones > gl) {
     status = 'hiperestatico';
     motivo = `Hay más condiciones de vínculo (${restricciones}) que grados de libertad (${gl}).`;
