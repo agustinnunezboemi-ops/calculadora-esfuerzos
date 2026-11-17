@@ -167,3 +167,22 @@ test('TP N°4 · 9d: dos chapas, N y Q iguales al TP; Mf igual en valor absoluto
   close(Math.abs(tr('C', 'B').M.eval(2.5)), 48.333, '|Mb inf|', 1e-4);
   close(Math.abs(tr('B', 'A').M.eval(0)), 75, '|Mb sup|');
 });
+
+test('TP N°4 · 5c: barra inclinada a 60° (SRP desde su extremo izquierdo) y viga horizontal', () => {
+  const s = solved(caso('tp4-5c.json'));
+  close(reaction(s, 'R_{Ay}'), 2.911, 'R_Ay', 1e-3);
+  close(reaction(s, 'R_{Dx}'), -3, 'R_Dx', 1e-3);
+  close(reaction(s, 'R_{Dy}'), -3.179, 'R_Dy', 1e-3);
+  const tr = (a: string, b: string) => s.bars.find((r) => r.bar.from === a && r.bar.to === b)!;
+  close(tr('A', 'B').N.eval(0), -2.521, 'N en AB = −R_Ay·sen 60°', 1e-3);
+  close(tr('A', 'B').Q.eval(0), 1.4555, 'Q en AB = R_Ay·cos 60°', 1e-3);
+  close(tr('B', 'C').N.eval(0), -3.521, 'N en BC', 1e-3);
+  close(tr('B', 'C').Q.eval(0), -0.277, 'Q en BC', 1e-3);
+  close(tr('A', 'B').M.eval(tr('A', 'B').bar.L), 0.728, 'Mf en B', 1e-3);
+  close(tr('C', 'D').M.eval(0), 0.589, 'Mf en C', 1e-3);
+  close(tr('D', 'E').M.eval(0), 1.067, 'Mf en D', 1e-3);
+  close(tr('E', 'F').M.eval(0), 0.75, 'Mf en E', 1e-3);
+  close(tr('D', 'E').N.eval(0), 1, 'N en DE', 1e-3);
+  close(tr('E', 'F').Q.eval(0), -3, 'Q en EF', 1e-3);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
