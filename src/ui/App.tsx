@@ -375,6 +375,28 @@ export function App({ onHome }: { onHome?: () => void }) {
               ))}
             </tbody>
           </table>
+          {(model.hinges ?? []).map((h) => {
+            // Articulación con 3 o más tramos: se elige qué barras llegan articuladas; el resto sigue rígido (chapa en L o T).
+            const tramos = result.st.bars.filter((b) => b.from === h.node || b.to === h.node);
+            const origs = [...new Set(tramos.map((b) => b.orig))];
+            if (tramos.length < 3) return null;
+            const sueltas = new Set(h.bars?.length ? h.bars : origs);
+            return (
+              <div key={h.node} className="art-parcial">
+                <span>Articulación en {h.node}: barras que llegan articuladas</span>
+                {origs.map((o) => (
+                  <label key={o}><input type="checkbox" checked={sueltas.has(o)} onChange={(e) => set((m) => {
+                    const hh = (m.hinges ?? []).find((x) => x.node === h.node)!;
+                    const sel = new Set(hh.bars?.length ? hh.bars : origs);
+                    if (e.target.checked) sel.add(o); else sel.delete(o);
+                    const lista = origs.filter((x) => sel.has(x));
+                    if (!lista.length || lista.length === origs.length) delete hh.bars; else hh.bars = lista;
+                  })} /> {o}</label>
+                ))}
+                <small>Las barras sin marcar quedan unidas rígidamente entre sí (una sola chapa que pasa por el pasador).</small>
+              </div>
+            );
+          })}
           <button className="agregar" onClick={() => set((m) => { const last = m.nodes[m.nodes.length - 1]; m.nodes.push({ id: nextNode(), x: (last?.x ?? 0) + 2, y: last?.y ?? 0 }); })}>Agregar nodo</button>
           <NodoEnRecta model={model} unidad={units.longitud} onModel={(m) => setModel(limpiar(m))} onAviso={setAviso} />
 
@@ -387,6 +409,7 @@ export function App({ onHome }: { onHome?: () => void }) {
                   <td><input aria-label="Nombre de la barra" style={{ width: 48 }} value={b.id} onChange={(e) => set((m) => {
                     const old = m.bars[i].id; const nu = e.target.value.trim() || old;
                     m.bars[i].id = nu; m.loads.forEach((l) => { if ('bar' in l && l.bar === old) l.bar = nu; });
+                    (m.hinges ?? []).forEach((h) => { if (h.bars) h.bars = h.bars.map((x) => (x === old ? nu : x)); });
                   })} /></td>
                   <td><select aria-label="Nodo inicial" value={b.from} onChange={(e) => set((m) => { m.bars[i].from = e.target.value; })}>{nodeIds.map((id) => <option key={id}>{id}</option>)}</select></td>
                   <td><select aria-label="Nodo final" value={b.to} onChange={(e) => set((m) => { m.bars[i].to = e.target.value; })}>{nodeIds.map((id) => <option key={id}>{id}</option>)}</select></td>
@@ -615,6 +638,7 @@ export function limpiar(m: Model): Model {
   const bs = new Set(m.bars.map((b) => b.id));
   m.supports = m.supports.filter((x) => ns.has(x.node));
   m.hinges = (m.hinges ?? []).filter((h) => ns.has(h.node));
+  m.hinges.forEach((h) => { if (h.bars) { h.bars = h.bars.filter((x) => bs.has(x)); if (!h.bars.length) delete h.bars; } });
   m.loads = m.loads.filter((l) => (l.type === 'distribuida' ? bs.has(l.bar) : l.bar !== undefined ? bs.has(l.bar) : l.node !== undefined && ns.has(l.node)));
   return m;
 }

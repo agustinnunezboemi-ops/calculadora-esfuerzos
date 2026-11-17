@@ -61,7 +61,7 @@ Formato:
   "nodes": [{"id": "A", "x": 0, "y": 0}],
   "bars": [{"id": "AB", "from": "A", "to": "B"}],
   "supports": [{"node": "A", "type": "fijo" | "movil"${tipo === 'esfuerzos' ? ' | "empotramiento"' : ''}, "angle": 0}],
-  ${tipo === 'esfuerzos' ? '"hinges": [{"node": "C"}],\n  ' : ''}"loads": [ ... ],
+  ${tipo === 'esfuerzos' ? '"hinges": [{"node": "C"}, {"node": "B", "bars": ["BD"]}],\n  ' : ''}"loads": [ ... ],
   "notas": ["..."]
 }
 Apoyos: "fijo" = articulación fija (2 reacciones); "movil" = apoyo deslizante (1 reacción), "angle" = ángulo del plano de apoyo (0 = apoyado sobre un plano horizontal, reacción vertical; 90 = contra una pared vertical, reacción horizontal).
@@ -76,7 +76,7 @@ Es un RETICULADO: barras articuladas en los nodos y cargas solo en los nodos.
 Cargas: {"type": "puntual", "node": "B", "value": 84, "angle": -90}. No uses empotramientos ni cargas distribuidas.`;
   return `${comunes}
 Es una VIGA o PÓRTICO. Cada tramo recto entre nodos es una barra; poné un nodo en cada apoyo, articulación, carga puntual o cupla, cambio de dirección y en el inicio y fin de cada carga distribuida.
-Articulaciones internas (rótulas) en "hinges".
+Articulaciones internas (rótulas) en "hinges". Si en el pasador una chapa sigue continua (por ejemplo una barra en L o en T que pasa por el nodo) y otra barra llega articulada a ella, agregá "bars" con solo las barras que llegan articuladas; las demás quedan unidas rígidamente. No separes en dos chapas una barra que en la figura es una sola pieza.
 Cargas:
 - puntual: {"type": "puntual", "node": "C", "value": 10, "angle": -90}
 - cupla: {"type": "cupla", "node": "C", "value": 10} (positiva antihoraria, negativa horaria)
@@ -134,7 +134,11 @@ export function validarPropuesta(j: unknown, tipo: Tipo): Propuesta {
       return [{ type: 'distribuida', bar: str(x.bar), from: num(x.from), to: num(x.to), q1: num(x.q1), q2: num(x.q2, num(x.q1)), angle: num(x.angle, -90) }];
     return [];
   });
-  const hinges = tipo === 'esfuerzos' && Array.isArray(o.hinges) ? o.hinges.map((h) => ({ node: str((h as Record<string, unknown>).node) })).filter((h) => ids.has(h.node)) : [];
+  const hinges = tipo === 'esfuerzos' && Array.isArray(o.hinges) ? o.hinges.map((h) => {
+    const x = h as Record<string, unknown>;
+    const bs = Array.isArray(x.bars) ? x.bars.map(str).filter((b) => barIds.has(b)) : [];
+    return bs.length ? { node: str(x.node), bars: bs } : { node: str(x.node) };
+  }).filter((h) => ids.has(h.node)) : [];
   const descartados = (Array.isArray(o.loads) ? o.loads.length : 0) - loads.length + (Array.isArray(o.supports) ? o.supports.length : 0) - supports.length;
   if (descartados > 0) notas.push(`Se descartaron ${descartados} dato(s) que no se pudieron interpretar: revisá cargas y vínculos.`);
   const unidades = ['kN-m', 'N-m', 'kip-ft', 'lb-in', 'lb-ft'].includes(str(o.unidades)) ? str(o.unidades) : null;

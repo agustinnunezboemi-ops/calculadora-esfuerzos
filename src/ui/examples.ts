@@ -6,6 +6,7 @@ import tp4_5e from '../../tests/casos/tp4-5e.json';
 import tp4_6 from '../../tests/casos/tp4-6.json';
 import tp4_9c from '../../tests/casos/tp4-9c.json';
 import tp4_9d from '../../tests/casos/tp4-9d.json';
+import beerL from '../../tests/casos/beer-chapa-L.json';
 
 /** Ejercicios cargados por Agustín y verificados contra las respuestas del TP N°4. */
 const desdeArchivo = (j: unknown): Model => {
@@ -131,6 +132,7 @@ export const EXAMPLES: Example[] = [
       loads: [{ type: 'puntual', bar: 'AC', at: 8, value: 10, angle: -90 }],
     },
   },
+  { id: 'beer-chapa-L', nombre: 'Chapa en L con pasador en B (barra BD articulada)', unidades: unidadesDe(beerL), model: desdeArchivo(beerL) },
 ];
 
 // Orden del menú: módulo 10, TP N°4 por número de ejercicio y luego los demás.

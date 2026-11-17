@@ -16,6 +16,8 @@ export interface SNode {
   p: Vec;
   hinge: boolean;
   auto: boolean;
+  /** Barras originales articuladas en el nodo (si falta, todas). */
+  released?: Set<string>;
 }
 
 export interface SDist {
@@ -226,7 +228,11 @@ export function normalize(model: Model): Structure {
     }
   });
 
-  for (const h of model.hinges ?? []) getNode(h.node).hinge = true;
+  for (const h of model.hinges ?? []) {
+    const n = getNode(h.node);
+    n.hinge = true;
+    if (h.bars?.length) n.released = new Set(h.bars);
+  }
   for (const s of model.supports) getNode(s.node);
 
   return { nodes, bars, supports: model.supports, forces, couples, node: getNode };
