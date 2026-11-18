@@ -186,3 +186,21 @@ test('TP N°4 · 5c: barra inclinada a 60° (SRP desde su extremo izquierdo) y v
   close(tr('E', 'F').Q.eval(0), -3, 'Q en EF', 1e-3);
   assert.ok(s.bars.every((b) => b.izqIgualDer));
 });
+
+test('TP N°3 · 5b: pórtico con carga triangular horizontal en la columna AB', () => {
+  const s = solved(caso('tp3-5b.json'));
+  close(reaction(s, 'R_{Ay}'), -5 / 12, 'R_Ay', 1e-6);
+  close(reaction(s, 'R_{Hx}'), -1.5, 'R_Hx', 1e-6);
+  close(reaction(s, 'R_{Hy}'), -1 / 12, 'R_Hy', 1e-6);
+  const tr = (a: string, b: string) => s.bars.find((r) => r.bar.from === a && r.bar.to === b)!;
+  const AB = tr('A', 'B');
+  close(AB.N.eval(0), 5 / 12, 'N en AB (tracción)', 1e-6);
+  close(AB.Q.eval(1), -0.5, 'Q en B = −resultante de la triangular (y′ hacia la izquierda)', 1e-6);
+  close(AB.M.eval(1), -1 / 3, 'Mf en B = −0,5·2/3', 1e-6);
+  close(tr('C', 'D').Q.eval(0), 0.583, 'Q a la derecha de C', 1e-3);
+  close(tr('C', 'D').M.eval(0), -0.4375, 'Mf en C', 1e-6);
+  close(tr('D', 'E').M.eval(tr('D', 'E').bar.L), -0.25, 'Mf en E (viga)', 1e-6);
+  close(tr('H', 'G').Q.eval(0), 1.5, 'Q en HG', 1e-6);
+  close(tr('H', 'G').M.eval(tr('H', 'G').bar.L), 0.375, 'Mf en G', 1e-6);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
