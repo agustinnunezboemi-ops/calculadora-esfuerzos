@@ -2,6 +2,7 @@ import { Model } from '../engine/model.ts';
 import tp4_1b from '../../tests/casos/tp4-1b.json';
 import tp4_3c from '../../tests/casos/tp4-3c.json';
 import tp4_5b from '../../tests/casos/tp4-5b.json';
+import tp3_5b from '../../tests/casos/tp3-5b.json';
 import tp4_5c from '../../tests/casos/tp4-5c.json';
 import tp4_5e from '../../tests/casos/tp4-5e.json';
 import tp4_6 from '../../tests/casos/tp4-6.json';
@@ -135,6 +136,7 @@ export const EXAMPLES: Example[] = [
   },
   { id: 'beer-chapa-L', nombre: 'Chapa en L con pasador en B (barra BD articulada)', unidades: unidadesDe(beerL), model: desdeArchivo(beerL) },
   { id: 'tp4-5c', nombre: 'TP N°4 · 5c (barra inclinada a 60°)', unidades: unidadesDe(tp4_5c), model: desdeArchivo(tp4_5c) },
+  { id: 'tp3-5b', nombre: 'TP N°3 · 5b (carga triangular en la columna)', unidades: unidadesDe(tp3_5b), model: desdeArchivo(tp3_5b) },
 ];
 
 // Orden del menú: módulo 10, TP N°4 por número de ejercicio y luego los demás.
