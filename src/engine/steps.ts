@@ -302,14 +302,14 @@ export function buildSteps(sol: Solution, u: Units): Step[] {
       {
         t: 'table',
         head: ['Sección', 'Tramo', 'Variable', 'Rango'],
-        rows: sol.bars.map((r) => [`${r.seccion}–${r.seccion}`, `${r.bar.from}${r.bar.to}`, `x_{${r.seccion}}`, `0 ≤ x_{${r.seccion}} ≤ ${fmt(r.bar.L)} ${L}`]),
+        rows: porSeccion(sol).map((r) => [`${r.seccion}–${r.seccion}`, `${r.bar.from}${r.bar.to}`, `x_{${r.seccion}}`, `0 ≤ x_{${r.seccion}} ≤ ${fmt(r.bar.L)} ${L}`]),
       },
       ...(sol.bars.some((r) => Math.abs(r.bar.e.y) > 1e-9)
         ? [{ t: 'p' as const, text: 'En las barras no horizontales se usa el Sistema de Referencia Particular (SRP): x′ a lo largo de la barra en el sentido de recorrido e y′ girado 90° antihorario. Los valores positivos se dibujan hacia +y′.' }]
         : []),
     ],
   });
-  for (const r of sol.bars) steps.push(sectionStep(sol, r, names, u));
+  for (const r of porSeccion(sol)) steps.push(sectionStep(sol, r, names, u));
 
   // 11. Equilibrio de nudos de pórtico (T, cruz, esquinas).
   const nudos = nodeSteps(sol, names, u);
@@ -323,7 +323,7 @@ export function buildSteps(sol: Solution, u: Units): Step[] {
       {
         t: 'table',
         head: ['Punto', 'N', 'Q', 'Mf'],
-        rows: sol.bars.flatMap((r) => [
+        rows: porSeccion(sol).flatMap((r) => [
           [`${r.bar.from} (inicio ${r.bar.from}${r.bar.to})`, fmt(r.N.eval(0)), fmt(r.Q.eval(0)), fmt(r.M.eval(0))],
           [`${r.bar.to} (fin ${r.bar.from}${r.bar.to})`, fmt(r.N.eval(r.bar.L)), fmt(r.Q.eval(r.bar.L)), fmt(r.M.eval(r.bar.L))],
         ]),
@@ -435,7 +435,9 @@ function sideTerms(sol: Solution, r: BarResult, names: ReturnType<typeof loadNam
       if (!nz(p)) return null;
       const k = Math.abs(dd);
       return {
-        s: uniforme ? `${dd < 0 ? '−' : '+'} ${Math.abs(k - 1) < 1e-9 ? '' : `${fmt(k)}·`}${q}·${len}` : polyTerm(p, x),
+        s: uniforme
+          ? `${dd < 0 ? '−' : '+'} ${Math.abs(k - 1) < 1e-9 ? '' : `${fmt(k)}·`}${q}·${len}`
+          : `${p.eval(b.L / 2) < 0 ? '−' : '+'} ${Math.abs(k - 1) < 1e-9 ? '' : `${fmt(k)}·`}R_{q}`,
         n: polyTerm(p, x),
       };
     };
@@ -446,7 +448,7 @@ function sideTerms(sol: Solution, r: BarResult, names: ReturnType<typeof loadNam
     if (nz(pm)) {
       // izquierda: ∫(t − x)·w ≤ 0 ; derecha: ∫(t − x)·w ≥ 0 ; el signo final lo da (e × d)
       const sgPos = side === 'izq' ? cross(b.e, d.d) < 0 : cross(b.e, d.d) > 0;
-      T.M.s.push(uniforme ? `${sgPos ? '+' : '−'} ${q}·${len}·${len}/2` : polyTerm(pm, x));
+      T.M.s.push(uniforme ? `${sgPos ? '+' : '−'} ${q}·${len}·${len}/2` : `${sgPos ? '+' : '−'} M_{q}`);
       T.M.n.push(polyTerm(pm, x));
     }
   }
@@ -489,7 +491,7 @@ function sectionStep(sol: Solution, r: BarResult, names: ReturnType<typeof loadN
     const val = res[k][side];
     keyBlocks.push({
       t: 'eq',
-      text: `${e.sym}_{${i}–${i}}^{${useDer ? 'DER' : 'IZQ'}} = ${pre}[ ${joinTerms(T.s)} ] = ${pre}[ ${joinTerms(T.n)} ] = ${fmtPoly(val, x)}`,
+      text: `${e.sym}_{${i}–${i}}^{${useDer ? 'DER' : 'IZQ'}} = ${pre}[ ${joinTerms(T.s)} ] = ${joinTerms(T.s) === joinTerms(T.n) ? '' : `${pre}[ ${joinTerms(T.n)} ] = `}${fmtPoly(val, x)}`,
     });
     const other = res[k][useDer ? 'izq' : 'der'];
     keyBlocks.push({
@@ -502,6 +504,25 @@ function sectionStep(sol: Solution, r: BarResult, names: ReturnType<typeof loadN
   const qVals = qs.length ? `${items.length ? '; ' : ''}q_{${b.from}${b.to}} = ${fmt(qs.reduce((s, d) => s + d.q1, 0))} ${u.fuerza}/${u.longitud}` : '';
   if (items.length || qVals)
     blocks.push({ t: 'p', text: `Valores (DCE): ${items.map((it) => `${it.name} = ${fmt(it.M ? Math.abs(it.M) : Math.hypot(it.F.x, it.F.y))}`).join('; ')}${qVals}.` });
+  // Cargas distribuidas no uniformes (triangulares o trapeciales) del propio tramo: de dónde salen R_q y M_q.
+  for (const d of b.dist.filter((dd) => Math.abs(dd.q1 - dd.q2) >= 1e-12)) {
+    const X = Poly.linear(0, 1);
+    const w = Poly.linear(d.q1, (d.q2 - d.q1) / b.L);
+    const useDerQ = R.Q.s.length < L.Q.s.length;
+    const W0 = w.integrate();
+    const T0 = X.mul(w).integrate();
+    const W = useDerQ ? Poly.const(W0.eval(b.L)).sub(W0) : W0;
+    const Mq = useDerQ ? Poly.const(T0.eval(b.L)).sub(T0).sub(X.mul(W)) : X.mul(W).sub(T0);
+    const lejos = useDerQ ? b.to : b.from;
+    const qf = fmt(useDerQ ? d.q2 : d.q1);
+    const l = useDerQ ? `(${fmt(b.L)} − ${x})` : x;
+    blocks.push({
+      t: 'p',
+      text: `Carga distribuida variable en ${b.from}${b.to}: q(${x}) = ${fmtPoly(w, x)} ${u.fuerza}/${u.longitud} (q_{${b.from}} = ${fmt(d.q1)}, q_{${b.to}} = ${fmt(d.q2)}). Entre ${lejos} y la sección actúa un trapecio de longitud ℓ = ${l}; se descompone en un rectángulo q(${x})·ℓ, con brazo ℓ/2 respecto de G, y un triángulo (q_{${lejos}} − q(${x}))·ℓ/2, con brazo 2ℓ/3.`,
+    });
+    blocks.push({ t: 'eq', text: `R_{q} = (q_{${lejos}} + q(${x}))/2·ℓ = (${qf} + ${fmtPoly(w, x)})/2·${l} = ${fmtPoly(W, x)}` });
+    blocks.push({ t: 'eq', text: `M_{q} = q(${x})·ℓ²/2 + (q_{${lejos}} − q(${x}))·ℓ²/3 = ${fmtPoly(Mq, x)}` });
+  }
   blocks.push(...keyBlocks);
   if (r.M.degree === 2) {
     const [cc, bb, a] = r.M.c;
@@ -588,3 +609,6 @@ function nodeSteps(sol: Solution, names: ReturnType<typeof loadNames>, u: Units)
   }
   return { id: 'nudos', titulo: '11 – Equilibrio de nudos', blocks };
 }
+
+/** Tramos en el orden de las secciones (recorrido continuo de la estructura). */
+const porSeccion = (sol: Solution) => [...sol.bars].sort((a, b) => a.seccion - b.seccion);

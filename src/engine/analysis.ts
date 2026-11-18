@@ -330,6 +330,7 @@ export function analyze(model: Model): Solution {
     return { F, M };
   };
 
+  const orden = ordenSecciones(st.bars, st.nodes);
   const bars: BarResult[] = st.bars.map((b, i) => {
     const c = chapa[i];
     const left = component(c, i, b.from);
@@ -373,7 +374,7 @@ export function analyze(model: Model): Solution {
     const Mder = Mr;
     const sc = Math.max(1, ...[N, Q, M].flatMap((p) => p.c.map(Math.abs)));
     const izqIgualDer = N.approxEquals(Nder, sc) && Q.approxEquals(Qder, sc) && M.approxEquals(Mder, sc);
-    return { bar: b, seccion: i + 1, N, Q, M, Nder, Qder, Mder, izqIgualDer, nodosIzq: left.nodes, nodosDer: right.nodes };
+    return { bar: b, seccion: orden[i], N, Q, M, Nder, Qder, Mder, izqIgualDer, nodosIzq: left.nodes, nodosDer: right.nodes };
   });
 
   // Extremos.
@@ -459,3 +460,34 @@ function apparentReason(st: Structure, unknowns: Unknown[], nChapas: number): st
 
 export { normalize };
 export type { Structure, SBar, SNode };
+
+/**
+ * Numeración de las secciones siguiendo un recorrido continuo de la estructura (como en la
+ * resolución en papel): se arranca por un extremo libre (el de más a la izquierda y más abajo)
+ * y se avanza barra por barra; las ramas se recorren en profundidad.
+ */
+function ordenSecciones(bars: { from: string; to: string }[], nodes: { id: string; p: Vec }[]): number[] {
+  const P = new Map(nodes.map((n) => [n.id, n.p]));
+  const grado = new Map<string, number>();
+  for (const b of bars) for (const n of [b.from, b.to]) grado.set(n, (grado.get(n) ?? 0) + 1);
+  const cmp = (a: string, c: string) => {
+    const pa = P.get(a)!, pc = P.get(c)!;
+    return Math.abs(pa.x - pc.x) > 1e-9 ? pa.x - pc.x : pa.y - pc.y;
+  };
+  const num = new Array<number>(bars.length).fill(0);
+  let k = 0;
+  const visitar = (n: string) => {
+    for (let i = 0; i < bars.length; i++) {
+      if (num[i] || (bars[i].from !== n && bars[i].to !== n)) continue;
+      num[i] = ++k;
+      visitar(bars[i].from === n ? bars[i].to : bars[i].from);
+    }
+  };
+  while (k < bars.length) {
+    const libres = [...grado.keys()].filter((n) => bars.some((b, i) => !num[i] && (b.from === n || b.to === n)));
+    const extremos = libres.filter((n) => grado.get(n) === 1);
+    const inicio = (extremos.length ? extremos : libres).sort(cmp)[0];
+    visitar(inicio);
+  }
+  return num;
+}
