@@ -241,3 +241,39 @@ test('TP N°3 · 6d: chapa B–A–C–D–E y chapa C–F–G articulada en C',
   assert.equal(new Set(s.chapaOf).size, 2);
   assert.ok(s.bars.every((b) => b.izqIgualDer));
 });
+
+const mfEn = (s: ReturnType<typeof solved>, a: string, b: string, fin: boolean) => {
+  const r = s.bars.find((t) => t.bar.from === a && t.bar.to === b)!;
+  return r.M.eval(fin ? r.bar.L : 0);
+};
+
+test('TP N°4 · 3a: viga con dos montantes, apoyo fijo en F y móvil en G (kip-ft)', () => {
+  const s = solved(caso('tp4-3a.json'));
+  close(reaction(s, 'R_{Fx}'), -6.75, 'R_Fx', 1e-6);
+  close(reaction(s, 'R_{Fy}'), 9, 'R_Fy', 1e-6);
+  close(reaction(s, 'R_{Gx}'), 6.75, 'R_Gx', 1e-6);
+  close(mfEn(s, 'B', 'C', false), -7.2, 'Mf a la derecha de B', 1e-6);
+  close(mfEn(s, 'C', 'D', true), 3.6, 'Mf a la izquierda de D', 1e-6);
+  close(mfEn(s, 'B', 'F', false), 5.4, 'Mf en el pie del montante BF', 1e-6);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
+
+test('TP N°4 · 3b: viga con columna EA y montante CF (lb-in)', () => {
+  const s = solved(caso('tp4-3b.json'));
+  close(reaction(s, 'R_{Fx}'), -325, 'R_Fx', 1e-6);
+  close(reaction(s, 'R_{Ex}'), 325, 'R_Ex', 1e-6);
+  close(reaction(s, 'R_{Ey}'), 165, 'R_Ey', 1e-6);
+  close(mfEn(s, 'E', 'A', true), -1625, 'Mf en A', 1e-6);
+  close(mfEn(s, 'B', 'C', true), 580, 'Mf a la izquierda de C', 1e-6);
+  close(mfEn(s, 'C', 'D', false), -720, 'Mf a la derecha de C', 1e-6);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
+
+test('TP N°4 · 3c con las ménsulas dibujadas como barras: mismas reacciones que con las cuplas de traslado', () => {
+  const s = solved(caso('tp4-3c-mensulas.json'));
+  close(reaction(s, 'R_{Ay}'), 400, 'R_Ay', 1e-6);
+  close(reaction(s, 'R_{Ey}'), 800, 'R_Ey', 1e-6);
+  close(mfEn(s, 'C', 'D', false), 180, 'Mf a la derecha de C', 1e-6);
+  close(mfEn(s, 'B', 'F', false), -60, 'Mf en la ménsula BF', 1e-6);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});

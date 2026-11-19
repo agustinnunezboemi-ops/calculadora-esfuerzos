@@ -2,6 +2,9 @@ import { Model } from '../engine/model.ts';
 import tp4_1b from '../../tests/casos/tp4-1b.json';
 import tp4_3c from '../../tests/casos/tp4-3c.json';
 import tp4_5b from '../../tests/casos/tp4-5b.json';
+import tp4_3a from '../../tests/casos/tp4-3a.json';
+import tp4_3b from '../../tests/casos/tp4-3b.json';
+import tp4_3cm from '../../tests/casos/tp4-3c-mensulas.json';
 import tp3_6a from '../../tests/casos/tp3-6a.json';
 import tp3_6c from '../../tests/casos/tp3-6c.json';
 import tp3_6d from '../../tests/casos/tp3-6d.json';
@@ -143,6 +146,9 @@ export const EXAMPLES: Example[] = [
   { id: 'tp3-6a', nombre: 'TP N°3 · 6a / TP N°4 · 7a (articulación en D)', unidades: unidadesDe(tp3_6a), model: desdeArchivo(tp3_6a) },
   { id: 'tp3-6c', nombre: 'TP N°3 · 6c (chapa en L articulada en C, lb-in)', unidades: unidadesDe(tp3_6c), model: desdeArchivo(tp3_6c) },
   { id: 'tp3-6d', nombre: 'TP N°3 · 6d (chapa en L articulada en C, lb-in)', unidades: unidadesDe(tp3_6d), model: desdeArchivo(tp3_6d) },
+  { id: 'tp4-3a', nombre: 'TP N°4 · 3a (viga con dos montantes, kip-ft)', unidades: unidadesDe(tp4_3a), model: desdeArchivo(tp4_3a) },
+  { id: 'tp4-3b', nombre: 'TP N°4 · 3b (viga con columna y montante, lb-in)', unidades: unidadesDe(tp4_3b), model: desdeArchivo(tp4_3b) },
+  { id: 'tp4-3c-mensulas', nombre: 'TP N°4 · 3c (ménsulas dibujadas como barras)', unidades: unidadesDe(tp4_3cm), model: desdeArchivo(tp4_3cm) },
 ];
 
 // Orden del menú: módulo 10, TP N°4 por número de ejercicio y luego los demás.

@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "tipo": "esfuerzos",
+  "unidades": "kip-ft",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 1.2,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 2.4,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 3.6,
+      "y": 0
+    },
+    {
+      "id": "E",
+      "x": 4.8,
+      "y": 0
+    },
+    {
+      "id": "F",
+      "x": 1.2,
+      "y": 0.8
+    },
+    {
+      "id": "G",
+      "x": 3.6,
+      "y": -0.8
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "BC",
+      "from": "B",
+      "to": "C"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "DE",
+      "from": "D",
+      "to": "E"
+    },
+    {
+      "id": "BF",
+      "from": "B",
+      "to": "F"
+    },
+    {
+      "id": "DG",
+      "from": "D",
+      "to": "G"
+    }
+  ],
+  "supports": [
+    {
+      "node": "F",
+      "type": "fijo"
+    },
+    {
+      "node": "G",
+      "type": "movil",
+      "angle": 90
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "A",
+      "value": 1.5,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "C",
+      "value": 6,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "E",
+      "value": 1.5,
+      "angle": -90
+    }
+  ]
+}
