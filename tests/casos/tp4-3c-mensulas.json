@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "tipo": "esfuerzos",
+  "unidades": "N-m",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 0.15,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 0.45,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 0.75,
+      "y": 0
+    },
+    {
+      "id": "E",
+      "x": 0.9,
+      "y": 0
+    },
+    {
+      "id": "F",
+      "x": 0.15,
+      "y": 0.15
+    },
+    {
+      "id": "G",
+      "x": 0.3,
+      "y": 0.15
+    },
+    {
+      "id": "H",
+      "x": 0.45,
+      "y": 0.15
+    },
+    {
+      "id": "I",
+      "x": 0.6,
+      "y": 0.15
+    },
+    {
+      "id": "J",
+      "x": 0.75,
+      "y": 0.15
+    },
+    {
+      "id": "K",
+      "x": 0.9,
+      "y": 0.15
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "BF",
+      "from": "B",
+      "to": "F"
+    },
+    {
+      "id": "FG",
+      "from": "F",
+      "to": "G"
+    },
+    {
+      "id": "BC",
+      "from": "B",
+      "to": "C"
+    },
+    {
+      "id": "CH",
+      "from": "C",
+      "to": "H"
+    },
+    {
+      "id": "HI",
+      "from": "H",
+      "to": "I"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "DJ",
+      "from": "D",
+      "to": "J"
+    },
+    {
+      "id": "JK",
+      "from": "J",
+      "to": "K"
+    },
+    {
+      "id": "DE",
+      "from": "D",
+      "to": "E"
+    }
+  ],
+  "supports": [
+    {
+      "node": "A",
+      "type": "fijo"
+    },
+    {
+      "node": "E",
+      "type": "movil"
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "G",
+      "value": 400,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "I",
+      "value": 400,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "K",
+      "value": 400,
+      "angle": -90
+    }
+  ]
+}
