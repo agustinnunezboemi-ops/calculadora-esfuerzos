@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "tipo": "esfuerzos",
+  "unidades": "lb-in",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 8,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 0,
+      "y": -5
+    },
+    {
+      "id": "D",
+      "x": 0,
+      "y": -12
+    },
+    {
+      "id": "E",
+      "x": 16,
+      "y": -12
+    },
+    {
+      "id": "F",
+      "x": 16,
+      "y": -5
+    },
+    {
+      "id": "G",
+      "x": 16,
+      "y": 0
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "AC",
+      "from": "A",
+      "to": "C"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "DE",
+      "from": "D",
+      "to": "E"
+    },
+    {
+      "id": "CF",
+      "from": "C",
+      "to": "F"
+    },
+    {
+      "id": "FG",
+      "from": "F",
+      "to": "G"
+    }
+  ],
+  "supports": [
+    {
+      "node": "E",
+      "type": "fijo"
+    },
+    {
+      "node": "G",
+      "type": "fijo"
+    }
+  ],
+  "hinges": [
+    {
+      "node": "C",
+      "bars": [
+        "CF"
+      ]
+    }
+  ],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "B",
+      "value": 48,
+      "angle": -90
+    }
+  ]
+}
