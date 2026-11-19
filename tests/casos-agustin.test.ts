@@ -204,3 +204,40 @@ test('TP N°3 · 5b: pórtico con carga triangular horizontal en la columna AB',
   close(tr('H', 'G').M.eval(tr('H', 'G').bar.L), 0.375, 'Mf en G', 1e-6);
   assert.ok(s.bars.every((b) => b.izqIgualDer));
 });
+
+test('TP N°3 · 6a (= TP N°4 · 7a): viga y columna unidas por articulación en D', () => {
+  const s = solved(caso('tp3-6a.json'));
+  close(reaction(s, 'R_{Ax}'), -0.25, 'R_Ax', 1e-6);
+  close(reaction(s, 'R_{Ay}'), 1.75, 'R_Ay', 1e-6);
+  close(reaction(s, 'R_{Fx}'), -1.75, 'R_Fx', 1e-6);
+  close(reaction(s, 'R_{Fy}'), 1.25, 'R_Fy', 1e-6);
+  const mf = (a: string, b: string, fin: boolean) => { const r = s.bars.find((t) => t.bar.from === a && t.bar.to === b)!; return r.M.eval(fin ? r.bar.L : 0); };
+  close(mf('A', 'B', true), 0.4375, 'Mf en B', 1e-6);
+  close(mf('B', 'C', true), 0.625, 'Mf en C', 1e-6);
+  close(mf('C', 'D', true), 0, 'Mf en la articulación D', 1e-6);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
+
+test('TP N°3 · 6c: chapa A–F–C articulada en C (biela) y chapa B–C–D–E', () => {
+  const s = solved(caso('tp3-6c.json'));
+  close(reaction(s, 'R_{Ax}'), -80, 'R_Ax', 1e-6);
+  close(reaction(s, 'R_{Ay}'), 40, 'R_Ay', 1e-6);
+  close(reaction(s, 'R_{Bx}'), 80, 'R_Bx', 1e-6);
+  close(reaction(s, 'R_{By}'), 60, 'R_By', 1e-6);
+  // A–F–C sin cargas y articulada en sus extremos: la reacción en A es colineal con AC
+  close(reaction(s, 'R_{Ax}') * -5 - reaction(s, 'R_{Ay}') * 10, 0, 'R_A paralela a AC', 1e-6);
+  assert.equal(new Set(s.chapaOf).size, 2);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
+
+test('TP N°3 · 6d: chapa B–A–C–D–E y chapa C–F–G articulada en C', () => {
+  const s = solved(caso('tp3-6d.json'));
+  close(reaction(s, 'R_{Ex}'), -32, 'R_Ex', 1e-6);
+  close(reaction(s, 'R_{Ey}'), 38, 'R_Ey', 1e-6);
+  close(reaction(s, 'R_{Gx}'), 32, 'R_Gx', 1e-6);
+  close(reaction(s, 'R_{Gy}'), 10, 'R_Gy', 1e-6);
+  const r = s.bars.find((t) => t.bar.from === 'D' && t.bar.to === 'E')!;
+  close(r.M.eval(0), 608, 'Mf en D', 1e-6);
+  assert.equal(new Set(s.chapaOf).size, 2);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
