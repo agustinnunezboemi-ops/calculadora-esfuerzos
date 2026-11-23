@@ -102,12 +102,14 @@ export function buildTrussSteps(sol: TrussSolution, u: Units): Step[] {
     titulo: '6 – Barras de fuerza nula',
     blocks: sol.zero.length
       ? [
-          { t: 'p', text: 'Por inspección de los nodos sin cargas ni vínculos:' },
+          { t: 'p', text: 'Por inspección de los nodos sin vínculos:' },
           {
             t: 'list',
             items: sol.zero.map((z) =>
               z.regla === 'dos-barras'
                 ? `F_{${z.bar}} = 0: en el nodo ${z.node} concurren solo dos barras no colineales y no hay carga.`
+                : z.regla === 'carga-colineal'
+                ? `F_{${z.bar}} = 0: en el nodo ${z.node} concurren solo dos barras no colineales y la carga tiene la dirección de F_{${z.colineales![0]}}; proyectando en la normal a esa barra solo queda F_{${z.bar}}.`
                 : `F_{${z.bar}} = 0: en el nodo ${z.node} concurren tres barras, ${z.colineales!.map((c) => `F_{${c}}`).join(' y ')} son colineales, y no hay carga.`,
             ),
           },

@@ -13,6 +13,8 @@ import { PanelIA } from './PanelIA.tsx';
 import { NodoEnRecta } from './NodoEnRecta.tsx';
 import { alinearNodos } from '../engine/geometria.ts';
 import tp5_1h from '../../tests/casos/tp5-1h.json';
+import tp5_1d from '../../tests/casos/tp5-1d.json';
+import tp5_1j from '../../tests/casos/tp5-1j.json';
 import type { Propuesta } from '../ai/gemini.ts';
 
 import tp5_1i from '../../tests/casos/tp5-1i.json';
@@ -65,6 +67,18 @@ const EJEMPLOS: { id: string; nombre: string; unidades: string; model: Model }[]
       supports: [{ node: 'D', type: 'movil' }, { node: 'F', type: 'fijo' }],
       loads: [P('A', 1), P('B', 4), P('C', 1), P('E', 2.4)],
     },
+  },
+  {
+    id: 'tp5-1d',
+    nombre: 'TP N°5 · 1d (4 nodos, kip-ft)',
+    unidades: 'kip-ft',
+    model: { nodes: tp5_1d.nodes, bars: tp5_1d.bars, supports: tp5_1d.supports as Model['supports'], hinges: [], loads: tp5_1d.loads as Model['loads'] },
+  },
+  {
+    id: 'tp5-1j',
+    nombre: 'TP N°5 · 1j (cordón superior recto)',
+    unidades: 'kN-m',
+    model: { nodes: tp5_1j.nodes, bars: tp5_1j.bars, supports: tp5_1j.supports as Model['supports'], hinges: [], loads: tp5_1j.loads as Model['loads'] },
   },
   {
     id: 'tp5-1h',

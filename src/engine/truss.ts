@@ -40,7 +40,7 @@ export interface NodeEq {
 export interface ZeroBar {
   bar: string;
   node: string;
-  regla: 'dos-barras' | 'tres-barras';
+  regla: 'dos-barras' | 'tres-barras' | 'carga-colineal';
   /** Barras colineales (regla de tres barras). */
   colineales?: string[];
 }
@@ -159,8 +159,24 @@ export function solveTruss(model: Model): TrussSolution {
   while (changed) {
     changed = false;
     for (const n of nodeIds) {
-      if (loadsAt(n).length || model.supports.some((s) => s.node === n)) continue;
+      if (model.supports.some((s) => s.node === n)) continue;
       const act = bars.filter((bar) => (bar.a === n || bar.b === n) && !isZero.has(bar.id));
+      const cargas = loadsAt(n);
+      if (cargas.length) {
+        // Dos barras no colineales y la carga en la dirección de una de ellas: la otra es nula.
+        const P = cargas.reduce((acc, c) => ({ x: acc.x + c.F.x, y: acc.y + c.F.y }), { x: 0, y: 0 });
+        if (act.length === 2 && Math.hypot(P.x, P.y) > 1e-9) {
+          const us = act.map((bar) => dirFrom(bar, n));
+          if (Math.abs(cross(us[0], us[1])) > 1e-9)
+            for (let k = 0; k < 2; k++)
+              if (Math.abs(cross(us[k], P)) < 1e-9 * Math.hypot(P.x, P.y) && !isZero.has(act[1 - k].id)) {
+                isZero.add(act[1 - k].id);
+                zero.push({ bar: act[1 - k].id, node: n, regla: 'carga-colineal', colineales: [act[k].id] });
+                changed = true;
+              }
+        }
+        continue;
+      }
       if (act.length === 2) {
         const [u1, u2] = act.map((bar) => dirFrom(bar, n));
         if (Math.abs(cross(u1, u2)) > 1e-9)
