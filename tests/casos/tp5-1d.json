@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "tipo": "reticulado",
+  "unidades": "kip-ft",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 22.5,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 57.5,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 22.5,
+      "y": -12
+    }
+  ],
+  "bars": [
+    {
+      "id": "AB",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "id": "BC",
+      "from": "B",
+      "to": "C"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "DA",
+      "from": "D",
+      "to": "A"
+    },
+    {
+      "id": "BD",
+      "from": "B",
+      "to": "D"
+    }
+  ],
+  "supports": [
+    {
+      "node": "A",
+      "type": "fijo"
+    },
+    {
+      "node": "D",
+      "type": "movil"
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "puntual",
+      "node": "B",
+      "value": 10.8,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "C",
+      "value": 10.8,
+      "angle": -90
+    }
+  ]
+}

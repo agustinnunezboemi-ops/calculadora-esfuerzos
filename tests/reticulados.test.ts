@@ -1,6 +1,7 @@
 /** Reticulados: ejercicio resuelto y ejercicio 1 del TP N°5. Positivo = tracción. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { solveTruss, sectionMethod } from '../src/engine/truss.ts';
 import { Model } from '../src/engine/model.ts';
 import { close } from './helpers.ts';
@@ -85,8 +86,9 @@ test('TP N°5 · 1c (kips, ft) y barras de fuerza nula', () => {
   // equilibrarse con AD comprimida: F_AD = −1 kip (y F_CF = −1 kip).
   close(F.AD, -1, 'AD (errata de signo en el TP)');
   close(F.CF, -1, 'CF');
-  // AB y BC no son nulas por inspección (A y C tienen carga); no se marcan
-  assert.ok(!s.zero.some((z) => z.bar === 'AB'));
+  // A y C tienen carga, pero colineal con AD y CF: AB y BC son nulas por inspección (carga colineal)
+  assert.ok(s.zero.some((z) => z.bar === 'AB' && z.regla === 'carga-colineal'));
+  assert.ok(s.zero.some((z) => z.bar === 'BC' && z.regla === 'carga-colineal'));
 });
 
 test('método de las secciones: coincide con el de los nodos', () => {
@@ -141,4 +143,30 @@ test('TP N°5 · 1i (lb, ft), cargado por Agustín: simetría y nodo A', async (
   close(s.forces.HF, s.forces.GH, 'HF = GH por simetría');
   for (const id of ['FB', 'DG']) assert.ok(s.zero.some((z) => z.bar === id), `${id} nula por inspección`);
   for (const id of ['HC', 'GC', 'FC']) close(s.forces[id], 0, `${id} = 0 con esta carga`);
+});
+
+test('TP N°5 · 1d: reticulado de 4 nodos con apoyo móvil en D (kip-ft)', () => {
+  const s = solveTruss(JSON.parse(readFileSync(new URL('./casos/tp5-1d.json', import.meta.url), 'utf8')));
+  assert.equal(s.status, 'isostatico', s.motivo);
+  const R = (n: string) => s.reactions.find((r) => r.name === n)!.value;
+  close(R('R_{Dy}'), 10.8 * 80 / 22.5, 'R_D (ΣM_A)');
+  close(R('R_{Ay}'), -16.8, 'R_A');
+  // Nodo C: F_CD·(−12/37) = 10,8 → F_CD = −33,3; F_BC = −F_CD·35/37 = 31,5
+  close(s.forces.CD, -33.3, 'CD');
+  close(s.forces.BC, 31.5, 'BC');
+  close(s.forces.AB, 31.5, 'AB');
+  close(s.forces.BD, -10.8, 'BD');
+  close(s.forces.DA, -35.7, 'DA');
+});
+
+test('TP N°5 · 1j: cordón superior recto; DF nula por la carga colineal con EF en F', () => {
+  const s = solveTruss(JSON.parse(readFileSync(new URL('./casos/tp5-1j.json', import.meta.url), 'utf8')));
+  assert.equal(s.status, 'isostatico', s.motivo);
+  close(s.forces.AB, -6.24, 'AB');
+  close(s.forces.AC, 5.76, 'AC');
+  close(s.forces.BD, -4.16, 'BD');
+  close(s.forces.CE, 2.88, 'CE');
+  close(s.forces.EF, -1.2, 'EF');
+  close(s.forces.DF, 0, 'DF');
+  assert.ok(s.zero.some((z) => z.bar === 'DF' && z.regla === 'carga-colineal'), 'DF nula por inspección');
 });
