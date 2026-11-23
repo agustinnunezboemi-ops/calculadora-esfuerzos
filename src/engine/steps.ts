@@ -563,6 +563,10 @@ function nodeSteps(sol: Solution, names: ReturnType<typeof loadNames>, u: Units)
       t: 'p',
       text: 'En los nudos de pórtico (uniones en T, en cruz y esquinas) se aísla el nudo y se verifica su equilibrio. Sobre el nudo actúan, en cada extremo de barra, los esfuerzos N, Q y Mf con sentido opuesto al que actúan sobre la barra, más las cargas y reacciones aplicadas en él.',
     },
+    {
+      t: 'p',
+      text: 'Columna M (momento sobre el nudo, antihorario positivo): si la barra termina en el nudo (fin), el nudo queda del lado derecho de la sección y recibe M = −Mf; si la barra empieza en el nudo (inicio), queda del lado izquierdo y recibe M = +Mf. Por eso en una esquina donde llegan dos barras que terminan en el nudo (por ejemplo una viga y una columna recorrida hacia arriba) los Mf tienen signos opuestos y aun así ΣM = 0.',
+    },
   ];
   for (const id of ids) {
     const elems: NudoElem[] = [];
