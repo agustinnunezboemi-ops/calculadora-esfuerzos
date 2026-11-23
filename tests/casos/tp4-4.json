@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "tipo": "esfuerzos",
+  "unidades": "kN-m",
+  "nodes": [
+    {
+      "id": "A",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "C",
+      "x": 0.3,
+      "y": 0
+    },
+    {
+      "id": "D",
+      "x": 0.6,
+      "y": 0
+    },
+    {
+      "id": "E",
+      "x": 0.9,
+      "y": 0
+    },
+    {
+      "id": "B",
+      "x": 1.2,
+      "y": 0
+    }
+  ],
+  "bars": [
+    {
+      "id": "AC",
+      "from": "A",
+      "to": "C"
+    },
+    {
+      "id": "CD",
+      "from": "C",
+      "to": "D"
+    },
+    {
+      "id": "DE",
+      "from": "D",
+      "to": "E"
+    },
+    {
+      "id": "EB",
+      "from": "E",
+      "to": "B"
+    }
+  ],
+  "supports": [
+    {
+      "node": "C",
+      "type": "fijo"
+    },
+    {
+      "node": "B",
+      "type": "movil",
+      "angle": 0
+    }
+  ],
+  "hinges": [],
+  "loads": [
+    {
+      "type": "distribuida",
+      "bar": "AC",
+      "from": 0,
+      "to": 0.3,
+      "q1": 20,
+      "q2": 20,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "D",
+      "value": -22.66,
+      "angle": -90
+    },
+    {
+      "type": "puntual",
+      "node": "E",
+      "value": 69.33,
+      "angle": -90
+    }
+  ]
+}

@@ -277,3 +277,30 @@ test('TP N°4 · 3c con las ménsulas dibujadas como barras: mismas reacciones q
   close(mfEn(s, 'B', 'F', false), -60, 'Mf en la ménsula BF', 1e-6);
   assert.ok(s.bars.every((b) => b.izqIgualDer));
 });
+
+test('TP N°4 · 5d: pórtico con carga a 45° en la columna; nudos E y C en equilibrio', () => {
+  const s = solved(caso('tp4-5d.json'));
+  close(reaction(s, 'R_{Ay}'), -1.793, 'R_Ay', 1e-3);
+  close(reaction(s, 'R_{Hx}'), -Math.SQRT2, 'R_Hx', 1e-6);
+  close(reaction(s, 'R_{Hy}'), 1.207, 'R_Hy', 1e-3);
+  close(mfEn(s, 'D', 'E', true), -2.414, 'Mf de DE en E', 1e-3);
+  close(mfEn(s, 'F', 'E', true), 2.414, 'Mf de FE en E (columna recorrida hacia arriba)', 1e-3);
+  assert.ok(s.nodeChecks.every((n) => n.ok));
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
+
+test('TP N°4 · 4: viga con voladizo, distribuida en AC y dos puntuales', () => {
+  const s = solved(caso('tp4-4.json'));
+  close(reaction(s, 'R_{Cy}'), 15, 'R_Cy', 1e-2);
+  close(reaction(s, 'R_{By}'), 37.667, 'R_By', 1e-2);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
+
+test('TP N°4 · 3d: viga con ménsula B–D–E y distribuida uniforme (lb-ft)', () => {
+  const s = solved(caso('tp4-3d.json'));
+  close(reaction(s, 'R_{Ay}'), 1100, 'R_Ay', 1e-6);
+  close(reaction(s, 'R_{Cy}'), 1000, 'R_Cy', 1e-6);
+  close(mfEn(s, 'A', 'B', true), 2000, 'Mf a la izquierda de B', 1e-6);
+  close(mfEn(s, 'B', 'C', false), 1400, 'Mf a la derecha de B (salto por la cupla de la ménsula)', 1e-6);
+  assert.ok(s.bars.every((b) => b.izqIgualDer));
+});
