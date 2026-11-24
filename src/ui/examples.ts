@@ -1,6 +1,5 @@
 import { Model } from '../engine/model.ts';
 import tp4_1b from '../../tests/casos/tp4-1b.json';
-import tp4_3c from '../../tests/casos/tp4-3c.json';
 import tp4_5b from '../../tests/casos/tp4-5b.json';
 import tp4_5d from '../../tests/casos/tp4-5d.json';
 import tp4_4 from '../../tests/casos/tp4-4.json';
@@ -110,7 +109,7 @@ export const EXAMPLES: Example[] = [
     },
   },
   { id: 'tp4-1b', nombre: 'TP N°4 · 1b (voladizo, dos cargas)', unidades: unidadesDe(tp4_1b), model: desdeArchivo(tp4_1b) },
-  { id: 'tp4-3c', nombre: 'TP N°4 · 3c (viga con ménsulas)', unidades: unidadesDe(tp4_3c), model: desdeArchivo(tp4_3c) },
+  { id: 'tp4-3c', nombre: 'TP N°4 · 3c (viga con ménsulas)', unidades: unidadesDe(tp4_3cm), model: desdeArchivo(tp4_3cm) },
   { id: 'tp4-5b', nombre: 'TP N°4 · 5b (pórtico en T)', unidades: unidadesDe(tp4_5b), model: desdeArchivo(tp4_5b) },
   { id: 'tp4-5e', nombre: 'TP N°4 · 5e (pórtico con cupla)', unidades: unidadesDe(tp4_5e), model: desdeArchivo(tp4_5e) },
   { id: 'tp4-6', nombre: 'TP N°4 · 6 (pórtico con columna central)', unidades: unidadesDe(tp4_6), model: desdeArchivo(tp4_6) },
@@ -151,7 +150,6 @@ export const EXAMPLES: Example[] = [
   { id: 'tp3-6d', nombre: 'TP N°3 · 6d (chapa en L articulada en C, lb-in)', unidades: unidadesDe(tp3_6d), model: desdeArchivo(tp3_6d) },
   { id: 'tp4-3a', nombre: 'TP N°4 · 3a (viga con dos montantes, kip-ft)', unidades: unidadesDe(tp4_3a), model: desdeArchivo(tp4_3a) },
   { id: 'tp4-3b', nombre: 'TP N°4 · 3b (viga con columna y montante, lb-in)', unidades: unidadesDe(tp4_3b), model: desdeArchivo(tp4_3b) },
-  { id: 'tp4-3c-mensulas', nombre: 'TP N°4 · 3c (ménsulas dibujadas como barras)', unidades: unidadesDe(tp4_3cm), model: desdeArchivo(tp4_3cm) },
   { id: 'tp4-3d', nombre: 'TP N°4 · 3d (viga con ménsula, lb-ft)', unidades: unidadesDe(tp4_3d), model: desdeArchivo(tp4_3d) },
   { id: 'tp4-4', nombre: 'TP N°4 · 4 (viga con voladizo)', unidades: unidadesDe(tp4_4), model: desdeArchivo(tp4_4) },
   { id: 'tp4-5d', nombre: 'TP N°4 · 5d (pórtico, carga a 45°)', unidades: unidadesDe(tp4_5d), model: desdeArchivo(tp4_5d) },
